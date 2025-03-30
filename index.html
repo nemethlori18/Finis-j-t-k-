@@ -30,9 +30,8 @@
             text-align: center;
             line-height: 30px;
             position: absolute;
-            left: 50%;
-            bottom: 10px;
-            transform: translateX(-50%);
+            left: 85px;
+            top: 85px;
         }
         .obstacle {
             width: 30px;
@@ -42,15 +41,25 @@
             line-height: 30px;
             position: absolute;
         }
-        #joystick {
-            width: 80px;
-            height: 80px;
-            background-color: black;
-            border-radius: 50%;
+        #joystick-container {
             position: absolute;
             bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
+            width: 100px;
+            height: 100px;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #joystick {
+            width: 50px;
+            height: 50px;
+            background-color: black;
+            border-radius: 50%;
+            position: relative;
             cursor: grab;
         }
     </style>
@@ -59,6 +68,8 @@
     <h2>Dínó Joystick Játék</h2>
     <div id="game">
         <div id="dino">🦖</div>
+    </div>
+    <div id="joystick-container">
         <div id="joystick"></div>
     </div>
 
@@ -66,9 +77,12 @@
         const game = document.getElementById("game");
         const dino = document.getElementById("dino");
         const joystick = document.getElementById("joystick");
+        const joystickContainer = document.getElementById("joystick-container");
 
-        let dinoX = game.clientWidth / 2 - 15;
-        let dinoY = game.clientHeight - 40;
+        let dinoX = 85;
+        let dinoY = 85;
+        let joystickCenterX = 50;
+        let joystickCenterY = 50;
 
         function updateDinoPosition() {
             dino.style.left = `${dinoX}px`;
@@ -77,13 +91,31 @@
 
         joystick.addEventListener("touchmove", (event) => {
             let touch = event.touches[0];
-            let rect = game.getBoundingClientRect();
+            let rect = joystickContainer.getBoundingClientRect();
+            let deltaX = touch.clientX - (rect.left + joystickCenterX);
+            let deltaY = touch.clientY - (rect.top + joystickCenterY);
 
-            dinoX = Math.max(0, Math.min(rect.width - 30, touch.clientX - rect.left - 15));
-            dinoY = Math.max(0, Math.min(rect.height - 30, touch.clientY - rect.top - 15));
+            // Határozzuk meg a joystick mozgását egy adott sugarú körben
+            let distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+            let maxDistance = 40;
+
+            if (distance > maxDistance) {
+                deltaX = (deltaX / distance) * maxDistance;
+                deltaY = (deltaY / distance) * maxDistance;
+            }
+
+            joystick.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+
+            // Dínó mozgása
+            dinoX = Math.max(0, Math.min(game.clientWidth - 30, dinoX + deltaX * 0.1));
+            dinoY = Math.max(0, Math.min(game.clientHeight - 30, dinoY + deltaY * 0.1));
 
             updateDinoPosition();
             event.preventDefault();
+        });
+
+        joystick.addEventListener("touchend", () => {
+            joystick.style.transform = "translate(0, 0)";
         });
 
         updateDinoPosition();
