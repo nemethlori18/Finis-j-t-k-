@@ -16,16 +16,16 @@
             margin: 0;
         }
         #game {
-            width: 400px;
-            height: 400px;
+            width: 300px;
+            height: 300px;
             border: 2px solid black;
             position: relative;
             overflow: hidden;
             background-color: lightgray;
         }
         #dino {
-            width: 30px;
-            height: 30px;
+            width: 25px;
+            height: 25px;
             background-color: green;
             position: absolute;
             bottom: 10px;
@@ -33,15 +33,15 @@
             transform: translateX(-50%);
         }
         .obstacle {
-            width: 30px;
-            height: 30px;
+            width: 20px;
+            height: 20px;
             background-color: red;
             position: absolute;
         }
         #joystick {
             margin-top: 20px;
-            width: 100px;
-            height: 100px;
+            width: 80px;
+            height: 80px;
             background-color: gray;
             border-radius: 50%;
             position: relative;
@@ -51,14 +51,14 @@
             touch-action: none;
         }
         #joystickKnob {
-            width: 40px;
-            height: 40px;
+            width: 35px;
+            height: 35px;
             background-color: black;
             border-radius: 50%;
             position: absolute;
         }
         #score {
-            font-size: 20px;
+            font-size: 18px;
             margin-bottom: 10px;
         }
     </style>
@@ -79,16 +79,16 @@
         const joystickKnob = document.getElementById("joystickKnob");
         const scoreElement = document.getElementById("score");
 
-        let dinoX = game.clientWidth / 2 - 15;
-        let dinoY = game.clientHeight - 40;
+        let dinoX = game.clientWidth / 2 - 12.5;
+        let dinoY = game.clientHeight - 35;
         let score = 0;
 
         function moveDino(dx, dy) {
-            dinoX += dx;
-            dinoY += dy;
+            dinoX += dx * 0.3; // Érzékenyebb joystick
+            dinoY += dy * 0.3; // Érzékenyebb joystick
 
-            dinoX = Math.max(0, Math.min(game.clientWidth - 30, dinoX));
-            dinoY = Math.max(0, Math.min(game.clientHeight - 30, dinoY));
+            dinoX = Math.max(0, Math.min(game.clientWidth - 25, dinoX));
+            dinoY = Math.max(0, Math.min(game.clientHeight - 25, dinoY));
 
             dino.style.left = dinoX + "px";
             dino.style.top = dinoY + "px";
@@ -110,7 +110,7 @@
             let dx = touch.clientX - touchStartX;
             let dy = touch.clientY - touchStartY;
 
-            moveDino(dx * 0.1, dy * 0.1);
+            moveDino(dx, dy);
 
             touchStartX = touch.clientX;
             touchStartY = touch.clientY;
@@ -122,8 +122,8 @@
 
             let fromTop = Math.random() < 0.5;
             if (fromTop) {
-                obstacle.style.left = Math.random() * (game.clientWidth - 30) + "px";
-                obstacle.style.top = "-30px";
+                obstacle.style.left = Math.random() * (game.clientWidth - 20) + "px";
+                obstacle.style.top = "-20px";
                 game.appendChild(obstacle);
                 let fallInterval = setInterval(() => {
                     let top = parseInt(obstacle.style.top);
@@ -133,28 +133,28 @@
                         score++;
                         scoreElement.textContent = "Pontszám: " + score;
                     } else {
-                        obstacle.style.top = top + 5 + "px";
+                        obstacle.style.top = top + 4 + "px";
                     }
                 }, 50);
             } else {
-                obstacle.style.top = Math.random() * (game.clientHeight - 30) + "px";
+                obstacle.style.top = Math.random() * (game.clientHeight - 20) + "px";
                 obstacle.style.left = game.clientWidth + "px";
                 game.appendChild(obstacle);
                 let moveInterval = setInterval(() => {
                     let left = parseInt(obstacle.style.left);
-                    if (left < -30) {
+                    if (left < -20) {
                         clearInterval(moveInterval);
                         obstacle.remove();
                         score++;
                         scoreElement.textContent = "Pontszám: " + score;
                     } else {
-                        obstacle.style.left = left - 5 + "px";
+                        obstacle.style.left = left - 4 + "px";
                     }
                 }, 50);
             }
         }
 
-        setInterval(createObstacle, 2000);
+        setInterval(createObstacle, 1800);
     </script>
 </body>
 </html>
