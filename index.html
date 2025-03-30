@@ -37,6 +37,7 @@
             position: absolute;
             left: 110px;
             top: 350px;
+            transition: transform 0.05s linear;
         }
         .obstacle {
             width: 30px;
@@ -66,6 +67,7 @@
             border-radius: 50%;
             position: relative;
             cursor: grab;
+            transition: transform 0.1s ease-out;
         }
     </style>
 </head>
@@ -91,10 +93,15 @@
         let joystickCenterX = 50;
         let joystickCenterY = 50;
         let score = 0;
+        let velocityX = 0;
+        let velocityY = 0;
 
         function updateShipPosition() {
+            shipX = Math.max(0, Math.min(game.clientWidth - 30, shipX + velocityX));
+            shipY = Math.max(0, Math.min(game.clientHeight - 30, shipY + velocityY));
             ship.style.left = `${shipX}px`;
             ship.style.top = `${shipY}px`;
+            requestAnimationFrame(updateShipPosition);
         }
 
         joystick.addEventListener("touchmove", (event) => {
@@ -113,15 +120,16 @@
 
             joystick.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
 
-            shipX = Math.max(0, Math.min(game.clientWidth - 30, shipX + deltaX * 0.1));
-            shipY = Math.max(0, Math.min(game.clientHeight - 30, shipY + deltaY * 0.1));
+            velocityX = deltaX * 0.05;
+            velocityY = deltaY * 0.05;
 
-            updateShipPosition();
             event.preventDefault();
         });
 
         joystick.addEventListener("touchend", () => {
             joystick.style.transform = "translate(0, 0)";
+            velocityX = 0;
+            velocityY = 0;
         });
 
         function createObstacle() {
