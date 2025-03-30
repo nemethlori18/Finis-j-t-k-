@@ -28,21 +28,13 @@
             background-color: lightgray;
         }
         #dino {
-            width: 30px;
-            height: 30px;
             font-size: 24px;
-            text-align: center;
-            line-height: 30px;
             position: absolute;
             bottom: 10px;
             left: 10px;
         }
         .obstacle {
-            width: 35px;
-            height: 35px;
-            font-size: 18px;
-            text-align: center;
-            line-height: 20px;
+            font-size: 24px;
             position: absolute;
         }
         #joystick-container {
@@ -115,8 +107,8 @@
         });
 
         function moveDino() {
-            dinoX = Math.max(0, Math.min(gameArea.clientWidth - dino.clientWidth, dinoX));
-            dinoY = Math.max(0, Math.min(gameArea.clientHeight - dino.clientHeight, dinoY));
+            dinoX = Math.max(0, Math.min(gameArea.clientWidth - 24, dinoX));
+            dinoY = Math.max(0, Math.min(gameArea.clientHeight - 24, dinoY));
             dino.style.left = dinoX + "px";
             dino.style.top = dinoY + "px";
         }
@@ -132,26 +124,26 @@
 
             switch (randomSide) {
                 case 0: // Felülről jön
-                    posX = Math.random() * (gameArea.clientWidth - 20);
-                    posY = -20;
+                    posX = Math.random() * (gameArea.clientWidth - 24);
+                    posY = -24;
                     speedX = 0;
                     speedY = 2;
                     break;
                 case 1: // Alulról jön
-                    posX = Math.random() * (gameArea.clientWidth - 20);
-                    posY = gameArea.clientHeight + 20;
+                    posX = Math.random() * (gameArea.clientWidth - 24);
+                    posY = gameArea.clientHeight + 24;
                     speedX = 0;
                     speedY = -2;
                     break;
                 case 2: // Balról jön
-                    posX = -20;
-                    posY = Math.random() * (gameArea.clientHeight - 20);
+                    posX = -24;
+                    posY = Math.random() * (gameArea.clientHeight - 24);
                     speedX = 2;
                     speedY = 0;
                     break;
                 case 3: // Jobbról jön
-                    posX = gameArea.clientWidth + 20;
-                    posY = Math.random() * (gameArea.clientHeight - 20);
+                    posX = gameArea.clientWidth + 24;
+                    posY = Math.random() * (gameArea.clientHeight - 24);
                     speedX = -2;
                     speedY = 0;
                     break;
@@ -171,7 +163,7 @@
                     location.reload();
                 }
 
-                if (posX > gameArea.clientWidth || posY > gameArea.clientHeight || posX < -20 || posY < -20) {
+                if (posX > gameArea.clientWidth || posY > gameArea.clientHeight || posX < -24 || posY < -24) {
                     obstacle.remove();
                     score++; // Növeli a pontszámot, ha az akadály eltűnik
                     scoreDisplay.innerText = "Pontszám: " + score;
