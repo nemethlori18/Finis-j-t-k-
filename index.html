@@ -11,18 +11,13 @@
             align-items: center;
             justify-content: center;
             height: 100vh;
-            background: url('https://images.unsplash.com/photo-1447433819943-74a20887a81e') no-repeat center center/cover;
+            background: url('https://source.unsplash.com/800x600/?space,stars') no-repeat center center/cover;
             font-family: Arial, sans-serif;
             margin: 0;
-            color: white;
-        }
-        #score {
-            font-size: 20px;
-            font-weight: bold;
         }
         #game {
-            width: 250px;
-            height: 400px;
+            width: 300px;
+            height: 300px;
             border: 2px solid white;
             position: relative;
             background-color: rgba(0, 0, 0, 0.5);
@@ -35,9 +30,8 @@
             text-align: center;
             line-height: 30px;
             position: absolute;
-            left: 110px;
-            top: 350px;
-            transition: transform 0.05s linear;
+            left: 135px;
+            top: 135px;
         }
         .obstacle {
             width: 30px;
@@ -47,6 +41,11 @@
             line-height: 30px;
             position: absolute;
         }
+        #score {
+            color: white;
+            font-size: 20px;
+            margin-bottom: 10px;
+        }
         #joystick-container {
             position: absolute;
             bottom: 20px;
@@ -54,7 +53,7 @@
             transform: translateX(-50%);
             width: 100px;
             height: 100px;
-            background: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.1);
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -67,13 +66,12 @@
             border-radius: 50%;
             position: relative;
             cursor: grab;
-            transition: transform 0.1s ease-out;
         }
     </style>
 </head>
 <body>
-    <h2>Űrhajós Joystick Játék</h2>
-    <h3>Pontszám: <span id="score">0</span></h3>
+    <h2 style="color: white;">Űrhajós Joystick Játék</h2>
+    <div id="score">Pontok: 0</div>
     <div id="game">
         <div id="ship">🚀</div>
     </div>
@@ -88,20 +86,16 @@
         const joystickContainer = document.getElementById("joystick-container");
         const scoreDisplay = document.getElementById("score");
 
-        let shipX = 110;
-        let shipY = 350;
+        let shipX = 135;
+        let shipY = 135;
         let joystickCenterX = 50;
         let joystickCenterY = 50;
         let score = 0;
-        let velocityX = 0;
-        let velocityY = 0;
+        let obstacles = [];
 
         function updateShipPosition() {
-            shipX = Math.max(0, Math.min(game.clientWidth - 30, shipX + velocityX));
-            shipY = Math.max(0, Math.min(game.clientHeight - 30, shipY + velocityY));
             ship.style.left = `${shipX}px`;
             ship.style.top = `${shipY}px`;
-            requestAnimationFrame(updateShipPosition);
         }
 
         joystick.addEventListener("touchmove", (event) => {
@@ -120,61 +114,91 @@
 
             joystick.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
 
-            velocityX = deltaX * 0.05;
-            velocityY = deltaY * 0.05;
+            shipX = Math.max(0, Math.min(game.clientWidth - 30, shipX + deltaX * 0.1));
+            shipY = Math.max(0, Math.min(game.clientHeight - 30, shipY + deltaY * 0.1));
 
+            updateShipPosition();
             event.preventDefault();
         });
 
         joystick.addEventListener("touchend", () => {
             joystick.style.transform = "translate(0, 0)";
-            velocityX = 0;
-            velocityY = 0;
         });
 
         function createObstacle() {
             let obstacle = document.createElement("div");
             obstacle.classList.add("obstacle");
-            obstacle.innerHTML = "☄️";
-            obstacle.style.left = Math.random() * (game.clientWidth - 30) + "px";
-            obstacle.style.top = "0px";
-            game.appendChild(obstacle);
-        }
+            obstacle.innerText = "☄️";
+            let randomSide = Math.floor(Math.random() * 4);
+            let startX, startY;
 
-        function checkCollision(obstacle) {
-            let shipRect = ship.getBoundingClientRect();
-            let obstacleRect = obstacle.getBoundingClientRect();
-
-            if (
-                shipRect.left < obstacleRect.right &&
-                shipRect.right > obstacleRect.left &&
-                shipRect.top < obstacleRect.bottom &&
-                shipRect.bottom > obstacleRect.top
-            ) {
-                alert("Vesztettél! Pontszám: " + score);
-                score = 0;
-                scoreDisplay.textContent = score;
-                document.querySelectorAll(".obstacle").forEach(o => o.remove());
+            if (randomSide === 0) { // Balról jön
+                startX = -30;
+                startY = Math.random() * game.clientHeight;
+            } else if (randomSide === 1) { // Fentről jön
+                startX = Math.random() * game.clientWidth;
+                startY = -30;
+            } else if (randomSide === 2) { // Jobbról jön
+                startX = game.clientWidth + 30;
+                startY = Math.random() * game.clientHeight;
+            } else { // Lentről jön
+                startX = Math.random() * game.clientWidth;
+                startY = game.clientHeight + 30;
             }
+
+            obstacle.style.left = `${startX}px`;
+            obstacle.style.top = `${startY}px`;
+            game.appendChild(obstacle);
+
+            let speedX = (Math.random() * 2 + 1) * (randomSide === 2 ? -1 : 1);
+            let speedY = (Math.random() * 2 + 1) * (randomSide === 3 ? -1 : 1);
+
+            obstacles.push({ element: obstacle, x: startX, y: startY, speedX, speedY });
         }
 
-        function moveObstacles() {
-            document.querySelectorAll(".obstacle").forEach((obstacle) => {
-                let obstacleY = parseInt(obstacle.style.top);
-                obstacle.style.top = obstacleY + 5 + "px";
+        function updateObstacles() {
+            obstacles.forEach((obstacleObj, index) => {
+                obstacleObj.x += obstacleObj.speedX;
+                obstacleObj.y += obstacleObj.speedY;
 
-                if (obstacleY > game.clientHeight) {
-                    obstacle.remove();
-                    score++;
-                    scoreDisplay.textContent = score;
+                // Véletlenszerű gyorsulás vagy lassulás
+                if (Math.random() < 0.01) {
+                    obstacleObj.speedX *= 1.1;
+                    obstacleObj.speedY *= 1.1;
+                } else if (Math.random() < 0.01) {
+                    obstacleObj.speedX *= 0.9;
+                    obstacleObj.speedY *= 0.9;
                 }
 
-                checkCollision(obstacle);
+                obstacleObj.element.style.left = `${obstacleObj.x}px`;
+                obstacleObj.element.style.top = `${obstacleObj.y}px`;
+
+                if (
+                    obstacleObj.x < -30 ||
+                    obstacleObj.x > game.clientWidth + 30 ||
+                    obstacleObj.y < -30 ||
+                    obstacleObj.y > game.clientHeight + 30
+                ) {
+                    obstacleObj.element.remove();
+                    obstacles.splice(index, 1);
+                    score++;
+                    scoreDisplay.innerText = `Pontok: ${score}`;
+                }
+
+                if (
+                    obstacleObj.x < shipX + 30 &&
+                    obstacleObj.x + 30 > shipX &&
+                    obstacleObj.y < shipY + 30 &&
+                    obstacleObj.y + 30 > shipY
+                ) {
+                    alert(`Vége a játéknak! Elért pontszám: ${score}`);
+                    location.reload();
+                }
             });
         }
 
-        setInterval(createObstacle, 2000);
-        setInterval(moveObstacles, 50);
+        setInterval(createObstacle, 1000);
+        setInterval(updateObstacles, 50);
 
         updateShipPosition();
     </script>
