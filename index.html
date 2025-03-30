@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dínó játék joystickkal</title>
+    <title>Dínó joystick játék</title>
     <style>
         body {
             display: flex;
@@ -79,27 +79,27 @@
 
         let dinoX = 10, dinoY = 10;
         let score = 0;
-        let joystickActive = false, joystickCenterX, joystickCenterY;
+        let joystickActive = false, lastTouchX, lastTouchY;
 
         joystick.addEventListener("touchstart", (event) => {
             joystickActive = true;
             const touch = event.touches[0];
-            joystickCenterX = touch.clientX;
-            joystickCenterY = touch.clientY;
+            lastTouchX = touch.clientX;
+            lastTouchY = touch.clientY;
         });
 
         document.addEventListener("touchmove", (event) => {
             if (!joystickActive) return;
             const touch = event.touches[0];
-            let dx = touch.clientX - joystickCenterX;
-            let dy = touch.clientY - joystickCenterY;
+            let dx = touch.clientX - lastTouchX;
+            let dy = touch.clientY - lastTouchY;
 
             dinoX += dx * 0.2;
             dinoY += dy * 0.2;
             moveDino();
 
-            joystickCenterX = touch.clientX;
-            joystickCenterY = touch.clientY;
+            lastTouchX = touch.clientX;
+            lastTouchY = touch.clientY;
         });
 
         document.addEventListener("touchend", () => {
@@ -120,28 +120,30 @@
             gameArea.appendChild(obstacle);
 
             let posX, posY, speedX, speedY;
+            let enteredGame = false;
+
             const randomSide = Math.floor(Math.random() * 4);
 
             switch (randomSide) {
-                case 0: // Felülről jön
+                case 0:
                     posX = Math.random() * (gameArea.clientWidth - 24);
                     posY = -24;
                     speedX = 0;
                     speedY = 2;
                     break;
-                case 1: // Alulról jön
+                case 1:
                     posX = Math.random() * (gameArea.clientWidth - 24);
                     posY = gameArea.clientHeight + 24;
                     speedX = 0;
                     speedY = -2;
                     break;
-                case 2: // Balról jön
+                case 2:
                     posX = -24;
                     posY = Math.random() * (gameArea.clientHeight - 24);
                     speedX = 2;
                     speedY = 0;
                     break;
-                case 3: // Jobbról jön
+                case 3:
                     posX = gameArea.clientWidth + 24;
                     posY = Math.random() * (gameArea.clientHeight - 24);
                     speedX = -2;
@@ -158,14 +160,18 @@
                 obstacle.style.left = posX + "px";
                 obstacle.style.top = posY + "px";
 
+                if (!enteredGame && posX >= 0 && posX <= gameArea.clientWidth && posY >= 0 && posY <= gameArea.clientHeight) {
+                    enteredGame = true;
+                }
+
                 if (checkCollision(obstacle)) {
                     alert("Game Over! Újraindul a játék.");
                     location.reload();
                 }
 
-                if (posX > gameArea.clientWidth || posY > gameArea.clientHeight || posX < -24 || posY < -24) {
+                if (enteredGame && (posX > gameArea.clientWidth || posY > gameArea.clientHeight || posX < -24 || posY < -24)) {
                     obstacle.remove();
-                    score++; // Növeli a pontszámot, ha az akadály eltűnik
+                    score++;
                     scoreDisplay.innerText = "Pontszám: " + score;
                 } else {
                     requestAnimationFrame(moveObstacle);
