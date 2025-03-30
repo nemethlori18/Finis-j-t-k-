@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Űrhajós Játék</title>
+    <title>Űrhajós Joystick Játék</title>
     <style>
         body {
             display: flex;
@@ -11,30 +11,28 @@
             align-items: center;
             justify-content: center;
             height: 100vh;
-            background: url('https://source.unsplash.com/800x600/?stars,space') no-repeat center center;
-            background-size: cover;
+            background-color: black;
             font-family: Arial, sans-serif;
             margin: 0;
-            color: white;
         }
         #game {
-            width: 250px;
-            height: 250px;
+            width: 300px;
+            height: 300px;
             border: 2px solid white;
             position: relative;
-            background-color: rgba(0, 0, 0, 0.5);
+            background: url('https://www.publicdomainpictures.net/pictures/40000/velka/stars-background.jpg') no-repeat center;
+            background-size: cover;
             overflow: hidden;
         }
-        #spaceship {
+        #ship {
             width: 30px;
             height: 30px;
             font-size: 24px;
             text-align: center;
             line-height: 30px;
             position: absolute;
-            left: 50%;
-            bottom: 10px;
-            transform: translateX(-50%);
+            left: 135px;
+            top: 135px;
         }
         .obstacle {
             width: 30px;
@@ -44,98 +42,120 @@
             line-height: 30px;
             position: absolute;
         }
-        #joystick {
-            width: 80px;
-            height: 80px;
-            background-color: white;
-            border-radius: 50%;
+        #joystick-container {
             position: absolute;
             bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
-            cursor: grab;
+            width: 100px;
+            height: 100px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
-        #score {
-            font-size: 18px;
-            margin-bottom: 10px;
+        #joystick {
+            width: 50px;
+            height: 50px;
+            background-color: white;
+            border-radius: 50%;
+            position: relative;
+            cursor: grab;
         }
     </style>
 </head>
 <body>
-    <h2>Űrhajós Játék</h2>
-    <div id="score">Pont: 0</div>
+    <h2 style="color: white;">Űrhajós Joystick Játék</h2>
     <div id="game">
-        <div id="spaceship">🚀</div>
+        <div id="ship">🚀</div>
+    </div>
+    <div id="joystick-container">
         <div id="joystick"></div>
     </div>
 
     <script>
         const game = document.getElementById("game");
-        const spaceship = document.getElementById("spaceship");
+        const ship = document.getElementById("ship");
         const joystick = document.getElementById("joystick");
-        const scoreDisplay = document.getElementById("score");
+        const joystickContainer = document.getElementById("joystick-container");
 
-        let spaceshipX = game.clientWidth / 2 - 15;
-        let spaceshipY = game.clientHeight - 40;
-        let score = 0;
+        let shipX = 135;
+        let shipY = 135;
+        let joystickCenterX = 50;
+        let joystickCenterY = 50;
 
-        function updateSpaceshipPosition() {
-            spaceship.style.left = `${spaceshipX}px`;
-            spaceship.style.top = `${spaceshipY}px`;
+        function updateShipPosition() {
+            ship.style.left = `${shipX}px`;
+            ship.style.top = `${shipY}px`;
         }
 
         joystick.addEventListener("touchmove", (event) => {
             let touch = event.touches[0];
-            let rect = game.getBoundingClientRect();
+            let rect = joystickContainer.getBoundingClientRect();
+            let deltaX = touch.clientX - (rect.left + joystickCenterX);
+            let deltaY = touch.clientY - (rect.top + joystickCenterY);
 
-            spaceshipX = Math.max(0, Math.min(rect.width - 30, touch.clientX - rect.left - 15));
-            spaceshipY = Math.max(0, Math.min(rect.height - 30, touch.clientY - rect.top - 15));
+            let distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+            let maxDistance = 40;
 
-            updateSpaceshipPosition();
+            if (distance > maxDistance) {
+                deltaX = (deltaX / distance) * maxDistance;
+                deltaY = (deltaY / distance) * maxDistance;
+            }
+
+            joystick.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+
+            shipX = Math.max(0, Math.min(game.clientWidth - 30, shipX + deltaX * 0.1));
+            shipY = Math.max(0, Math.min(game.clientHeight - 30, shipY + deltaY * 0.1));
+
+            updateShipPosition();
             event.preventDefault();
         });
 
-        function spawnObstacle() {
-            let obstacle = document.createElement("div");
+        joystick.addEventListener("touchend", () => {
+            joystick.style.transform = "translate(0, 0)";
+        });
+
+        function createObstacle() {
+            const obstacle = document.createElement("div");
             obstacle.classList.add("obstacle");
-            obstacle.innerText = "☄️";
-
-            let startX = Math.random() * (game.clientWidth - 30);
-            let startY = Math.random() * (game.clientHeight - 30);
-            obstacle.style.left = `${startX}px`;
-            obstacle.style.top = `${startY}px`;
-
+            obstacle.innerHTML = "☄️";
+            obstacle.style.left = Math.random() * (game.clientWidth - 30) + "px";
+            obstacle.style.top = "-30px";
             game.appendChild(obstacle);
 
             let interval = setInterval(() => {
-                let obstacleX = parseInt(obstacle.style.left);
-                let obstacleY = parseInt(obstacle.style.top);
-
-                let dx = spaceshipX - obstacleX;
-                let dy = spaceshipY - obstacleY;
-                let distance = Math.sqrt(dx * dx + dy * dy);
-
-                if (distance < 30) {
-                    alert("Ütközés! Játék újraindul.");
-                    spaceshipX = game.clientWidth / 2 - 15;
-                    spaceshipY = game.clientHeight - 40;
-                    score = 0;
-                    scoreDisplay.innerText = "Pont: " + score;
-                    game.innerHTML = '<div id="spaceship">🚀</div><div id="joystick"></div>';
+                let currentTop = parseInt(obstacle.style.top);
+                if (currentTop > game.clientHeight) {
+                    obstacle.remove();
                     clearInterval(interval);
+                } else {
+                    obstacle.style.top = currentTop + 5 + "px";
+                }
+
+                if (checkCollision(ship, obstacle)) {
+                    alert("Game Over!");
+                    location.reload();
                 }
             }, 50);
-
-            setTimeout(() => {
-                game.removeChild(obstacle);
-                score++;
-                scoreDisplay.innerText = "Pont: " + score;
-            }, 3000);
         }
 
-        setInterval(spawnObstacle, 1500);
+        function checkCollision(ship, obstacle) {
+            let shipRect = ship.getBoundingClientRect();
+            let obstacleRect = obstacle.getBoundingClientRect();
 
-        updateSpaceshipPosition();
+            return !(
+                shipRect.top > obstacleRect.bottom ||
+                shipRect.bottom < obstacleRect.top ||
+                shipRect.left > obstacleRect.right ||
+                shipRect.right < obstacleRect.left
+            );
+        }
+
+        setInterval(createObstacle, 2000);
+
+        updateShipPosition();
     </script>
 </body>
 </html>
