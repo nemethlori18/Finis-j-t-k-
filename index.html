@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dínó joystick játéka</title>
+    <title>Dínó játék joystickkal</title>
     <style>
         body {
             display: flex;
@@ -16,145 +16,144 @@
             margin: 0;
         }
         #game {
-            width: 150px;
-            height: 75px;
+            width: 200px;
+            height: 200px;
             border: 2px solid black;
             position: relative;
             overflow: hidden;
             background-color: lightgray;
         }
         #dino {
-            width: 25px;
-            height: 25px;
+            width: 20px;
+            height: 20px;
             background-color: green;
             position: absolute;
             bottom: 10px;
-            left: 50%;
-            transform: translateX(-50%);
+            left: 10px;
         }
         .obstacle {
-            width: 35px;
-            height: 35px;
+            width: 15px;
+            height: 15px;
             background-color: red;
             position: absolute;
         }
         #joystick {
-            margin-top: 20px;
             width: 80px;
             height: 80px;
             background-color: gray;
             border-radius: 50%;
-            position: relative;
+            position: absolute;
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            touch-action: none;
             display: flex;
             align-items: center;
             justify-content: center;
-            touch-action: none;
-        }
-        #joystickKnob {
-            width: 35px;
-            height: 35px;
-            background-color: black;
-            border-radius: 50%;
-            position: absolute;
-        }
-        #score {
-            font-size: 18px;
-            margin-bottom: 10px;
+            font-size: 24px;
+            user-select: none;
+            cursor: grab;
         }
     </style>
 </head>
 <body>
-    <div id="score">Pontszám: 0</div>
+    <h2>Dínó joystick játék</h2>
     <div id="game">
-        <div id="dino"></div>
+        <div id="dino">🦖</div>
     </div>
-    <div id="joystick">
-        <div id="joystickKnob"></div>
-    </div>
+    <div id="joystick">🎮</div>
 
     <script>
+        const gameArea = document.getElementById("game");
         const dino = document.getElementById("dino");
-        const game = document.getElementById("game");
         const joystick = document.getElementById("joystick");
-        const joystickKnob = document.getElementById("joystickKnob");
-        const scoreElement = document.getElementById("score");
+        let dinoX = 10, dinoY = 10, speed = 5;
 
-        let dinoX = game.clientWidth / 2 - 12.5;
-        let dinoY = game.clientHeight - 35;
-        let score = 0;
+        // Joystick mozgatás
+        let isDragging = false;
+        joystick.addEventListener("mousedown", () => isDragging = true);
+        joystick.addEventListener("mouseup", () => isDragging = false);
+        joystick.addEventListener("mouseleave", () => isDragging = false);
+        document.addEventListener("mousemove", (event) => {
+            if (!isDragging) return;
+            dinoX += (event.movementX / 3);
+            dinoY += (event.movementY / 3);
+            moveDino();
+        });
 
-        function moveDino(dx, dy) {
-            dinoX += dx * 0.3; // Érzékenyebb joystick
-            dinoY += dy * 0.3; // Érzékenyebb joystick
-
-            dinoX = Math.max(0, Math.min(game.clientWidth - 25, dinoX));
-            dinoY = Math.max(0, Math.min(game.clientHeight - 25, dinoY));
-
+        function moveDino() {
+            dinoX = Math.max(0, Math.min(gameArea.clientWidth - dino.clientWidth, dinoX));
+            dinoY = Math.max(0, Math.min(gameArea.clientHeight - dino.clientHeight, dinoY));
             dino.style.left = dinoX + "px";
             dino.style.top = dinoY + "px";
         }
 
-        let touchStartX = 0;
-        let touchStartY = 0;
-
-        joystick.addEventListener("touchstart", (e) => {
-            e.preventDefault();
-            const touch = e.touches[0];
-            touchStartX = touch.clientX;
-            touchStartY = touch.clientY;
-        });
-
-        joystick.addEventListener("touchmove", (e) => {
-            e.preventDefault();
-            const touch = e.touches[0];
-            let dx = touch.clientX - touchStartX;
-            let dy = touch.clientY - touchStartY;
-
-            moveDino(dx, dy);
-
-            touchStartX = touch.clientX;
-            touchStartY = touch.clientY;
-        });
-
         function createObstacle() {
             const obstacle = document.createElement("div");
             obstacle.classList.add("obstacle");
+            gameArea.appendChild(obstacle);
 
-            let fromTop = Math.random() < 0.5;
-            if (fromTop) {
-                obstacle.style.left = Math.random() * (game.clientWidth - 20) + "px";
-                obstacle.style.top = "-20px";
-                game.appendChild(obstacle);
-                let fallInterval = setInterval(() => {
-                    let top = parseInt(obstacle.style.top);
-                    if (top > game.clientHeight) {
-                        clearInterval(fallInterval);
-                        obstacle.remove();
-                        score++;
-                        scoreElement.textContent = "Pontszám: " + score;
-                    } else {
-                        obstacle.style.top = top + 4 + "px";
-                    }
-                }, 50);
-            } else {
-                obstacle.style.top = Math.random() * (game.clientHeight - 20) + "px";
-                obstacle.style.left = game.clientWidth + "px";
-                game.appendChild(obstacle);
-                let moveInterval = setInterval(() => {
-                    let left = parseInt(obstacle.style.left);
-                    if (left < -20) {
-                        clearInterval(moveInterval);
-                        obstacle.remove();
-                        score++;
-                        scoreElement.textContent = "Pontszám: " + score;
-                    } else {
-                        obstacle.style.left = left - 4 + "px";
-                    }
-                }, 50);
+            const randomSide = Math.floor(Math.random() * 4); // 0 = top, 1 = bottom, 2 = left, 3 = right
+            let posX, posY;
+
+            switch (randomSide) {
+                case 0: // Fentről jön
+                    posX = Math.random() * (gameArea.clientWidth - 15);
+                    posY = -15;
+                    break;
+                case 1: // Lentről jön
+                    posX = Math.random() * (gameArea.clientWidth - 15);
+                    posY = gameArea.clientHeight + 15;
+                    break;
+                case 2: // Balról jön
+                    posX = -15;
+                    posY = Math.random() * (gameArea.clientHeight - 15);
+                    break;
+                case 3: // Jobbról jön
+                    posX = gameArea.clientWidth + 15;
+                    posY = Math.random() * (gameArea.clientHeight - 15);
+                    break;
             }
+
+            obstacle.style.left = posX + "px";
+            obstacle.style.top = posY + "px";
+
+            const speedX = (gameArea.clientWidth / 2 - posX) / 100;
+            const speedY = (gameArea.clientHeight / 2 - posY) / 100;
+
+            function moveObstacle() {
+                posX += speedX;
+                posY += speedY;
+                obstacle.style.left = posX + "px";
+                obstacle.style.top = posY + "px";
+
+                if (checkCollision(obstacle)) {
+                    alert("Game Over! Újraindul a játék.");
+                    location.reload();
+                }
+
+                if (posX > gameArea.clientWidth || posY > gameArea.clientHeight || posX < -15 || posY < -15) {
+                    obstacle.remove();
+                } else {
+                    requestAnimationFrame(moveObstacle);
+                }
+            }
+
+            moveObstacle();
         }
 
-        setInterval(createObstacle, 1800);
+        function checkCollision(obstacle) {
+            const dinoRect = dino.getBoundingClientRect();
+            const obstacleRect = obstacle.getBoundingClientRect();
+            return (
+                dinoRect.left < obstacleRect.right &&
+                dinoRect.right > obstacleRect.left &&
+                dinoRect.top < obstacleRect.bottom &&
+                dinoRect.bottom > obstacleRect.top
+            );
+        }
+
+        setInterval(createObstacle, 2000);
     </script>
 </body>
 </html>
