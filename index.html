@@ -15,6 +15,10 @@
             font-family: Arial, sans-serif;
             margin: 0;
         }
+        #score {
+            font-size: 20px;
+            margin-bottom: 10px;
+        }
         #game {
             width: 200px;
             height: 200px;
@@ -24,28 +28,37 @@
             background-color: lightgray;
         }
         #dino {
-            width: 20px;
-            height: 20px;
-            background-color: green;
+            width: 30px;
+            height: 30px;
+            font-size: 24px;
+            text-align: center;
+            line-height: 30px;
             position: absolute;
             bottom: 10px;
             left: 10px;
         }
         .obstacle {
-            width: 15px;
-            height: 15px;
-            background-color: red;
+            width: 35px;
+            height: 35px;
+            font-size: 18px;
+            text-align: center;
+            line-height: 20px;
             position: absolute;
         }
+        #joystick-container {
+            position: relative;
+            width: 100px;
+            height: 100px;
+            margin-top: 20px;
+        }
         #joystick {
-            width: 80px;
-            height: 80px;
+            width: 60px;
+            height: 60px;
             background-color: gray;
             border-radius: 50%;
             position: absolute;
-            bottom: 50px;
-            left: 50%;
-            transform: translateX(-50%);
+            left: 20px;
+            top: 20px;
             touch-action: none;
             display: flex;
             align-items: center;
@@ -58,27 +71,47 @@
 </head>
 <body>
     <h2>Dínó joystick játék</h2>
+    <div id="score">Pontszám: 0</div>
     <div id="game">
         <div id="dino">🦖</div>
     </div>
-    <div id="joystick">🎮</div>
+    <div id="joystick-container">
+        <div id="joystick">🎮</div>
+    </div>
 
     <script>
         const gameArea = document.getElementById("game");
         const dino = document.getElementById("dino");
         const joystick = document.getElementById("joystick");
-        let dinoX = 10, dinoY = 10, speed = 5;
+        const scoreDisplay = document.getElementById("score");
 
-        // Joystick mozgatás
-        let isDragging = false;
-        joystick.addEventListener("mousedown", () => isDragging = true);
-        joystick.addEventListener("mouseup", () => isDragging = false);
-        joystick.addEventListener("mouseleave", () => isDragging = false);
-        document.addEventListener("mousemove", (event) => {
-            if (!isDragging) return;
-            dinoX += (event.movementX / 3);
-            dinoY += (event.movementY / 3);
+        let dinoX = 10, dinoY = 10;
+        let score = 0;
+        let joystickActive = false, joystickCenterX, joystickCenterY;
+
+        joystick.addEventListener("touchstart", (event) => {
+            joystickActive = true;
+            const touch = event.touches[0];
+            joystickCenterX = touch.clientX;
+            joystickCenterY = touch.clientY;
+        });
+
+        document.addEventListener("touchmove", (event) => {
+            if (!joystickActive) return;
+            const touch = event.touches[0];
+            let dx = touch.clientX - joystickCenterX;
+            let dy = touch.clientY - joystickCenterY;
+
+            dinoX += dx * 0.2;
+            dinoY += dy * 0.2;
             moveDino();
+
+            joystickCenterX = touch.clientX;
+            joystickCenterY = touch.clientY;
+        });
+
+        document.addEventListener("touchend", () => {
+            joystickActive = false;
         });
 
         function moveDino() {
@@ -91,35 +124,41 @@
         function createObstacle() {
             const obstacle = document.createElement("div");
             obstacle.classList.add("obstacle");
+            obstacle.innerText = "🎇";
             gameArea.appendChild(obstacle);
 
-            const randomSide = Math.floor(Math.random() * 4); // 0 = top, 1 = bottom, 2 = left, 3 = right
-            let posX, posY;
+            let posX, posY, speedX, speedY;
+            const randomSide = Math.floor(Math.random() * 4);
 
             switch (randomSide) {
-                case 0: // Fentről jön
-                    posX = Math.random() * (gameArea.clientWidth - 15);
-                    posY = -15;
+                case 0: // Felülről jön
+                    posX = Math.random() * (gameArea.clientWidth - 20);
+                    posY = -20;
+                    speedX = 0;
+                    speedY = 2;
                     break;
-                case 1: // Lentről jön
-                    posX = Math.random() * (gameArea.clientWidth - 15);
-                    posY = gameArea.clientHeight + 15;
+                case 1: // Alulról jön
+                    posX = Math.random() * (gameArea.clientWidth - 20);
+                    posY = gameArea.clientHeight + 20;
+                    speedX = 0;
+                    speedY = -2;
                     break;
                 case 2: // Balról jön
-                    posX = -15;
-                    posY = Math.random() * (gameArea.clientHeight - 15);
+                    posX = -20;
+                    posY = Math.random() * (gameArea.clientHeight - 20);
+                    speedX = 2;
+                    speedY = 0;
                     break;
                 case 3: // Jobbról jön
-                    posX = gameArea.clientWidth + 15;
-                    posY = Math.random() * (gameArea.clientHeight - 15);
+                    posX = gameArea.clientWidth + 20;
+                    posY = Math.random() * (gameArea.clientHeight - 20);
+                    speedX = -2;
+                    speedY = 0;
                     break;
             }
 
             obstacle.style.left = posX + "px";
             obstacle.style.top = posY + "px";
-
-            const speedX = (gameArea.clientWidth / 2 - posX) / 100;
-            const speedY = (gameArea.clientHeight / 2 - posY) / 100;
 
             function moveObstacle() {
                 posX += speedX;
@@ -132,8 +171,10 @@
                     location.reload();
                 }
 
-                if (posX > gameArea.clientWidth || posY > gameArea.clientHeight || posX < -15 || posY < -15) {
+                if (posX > gameArea.clientWidth || posY > gameArea.clientHeight || posX < -20 || posY < -20) {
                     obstacle.remove();
+                    score++; // Növeli a pontszámot, ha az akadály eltűnik
+                    scoreDisplay.innerText = "Pontszám: " + score;
                 } else {
                     requestAnimationFrame(moveObstacle);
                 }
