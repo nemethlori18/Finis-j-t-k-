@@ -100,6 +100,8 @@
         let bullets = [];
         let score = 0;
         let highscore = localStorage.getItem("highscore") || 0;
+        let isGameOver = false;
+        
         document.getElementById("highscore").innerText = highscore;
 
         function drawSpaceship() {
@@ -123,6 +125,8 @@
         }
 
         function updateGame() {
+            if (isGameOver) return; // Ha vége van, ne fussunk tovább
+
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             drawSpaceship();
             drawObstacles();
@@ -134,15 +138,15 @@
             bullets.forEach(bullet => bullet.y -= 5);
 
             // Lövedékek és akadályok ütközése
-            bullets = bullets.filter((bullet) => {
+            bullets = bullets.filter(bullet => {
                 let hit = false;
-                obstacles = obstacles.filter((obstacle) => {
+                obstacles = obstacles.filter(obstacle => {
                     if (bullet.x < obstacle.x + 15 && bullet.x + 15 > obstacle.x &&
                         bullet.y < obstacle.y + 15 && bullet.y + 15 > obstacle.y) {
                         score += 1;
                         document.getElementById("score").innerText = score;
                         hit = true;
-                        return false; 
+                        return false;
                     }
                     return true;
                 });
@@ -158,7 +162,7 @@
             });
 
             // Powerup felvétel
-            powerups = powerups.filter((powerup) => {
+            powerups = powerups.filter(powerup => {
                 if (spaceship.x < powerup.x + 15 && spaceship.x + spaceship.width > powerup.x &&
                     spaceship.y < powerup.y + 15 && spaceship.y + spaceship.height > powerup.y) {
                     score += 1;
@@ -182,16 +186,20 @@
         }
 
         function gameOver() {
+            isGameOver = true;
             document.getElementById("game-over").style.display = "block";
         }
 
         function restartGame() {
             document.getElementById("game-over").style.display = "none";
+            isGameOver = false;
+            
             if (score > highscore) {
                 highscore = score;
                 localStorage.setItem("highscore", highscore);
                 document.getElementById("highscore").innerText = highscore;
             }
+            
             score = 0;
             document.getElementById("score").innerText = score;
             spaceship.x = canvas.width / 2 - 20;
@@ -199,6 +207,8 @@
             obstacles = [];
             powerups = [];
             bullets = [];
+
+            updateGame();
         }
 
         function spawnObstacle() {
@@ -210,7 +220,7 @@
         }
 
         function shootBullet() {
-            bullets.push({ x: spaceship.x + spaceship.width / 2, y: spaceship.y });
+            bullets.push({ x: spaceship.x + spaceship.width / 2 - 7, y: spaceship.y });
         }
 
         setInterval(spawnObstacle, 2000);
