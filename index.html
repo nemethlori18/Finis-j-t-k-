@@ -6,60 +6,57 @@
     <title>Űrhajós Játék</title>
     <style>
         body {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            background-color: white;
+            text-align: center;
             font-family: Arial, sans-serif;
             margin: 0;
+            padding: 0;
+            background-color: white;
         }
-        #game-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+        h1 {
+            margin-top: 10px;
         }
-        #score {
-            font-size: 20px;
+        #pontszamlalo {
+            font-size: 18px;
             margin-bottom: 10px;
         }
-        #game {
+        #jatekter {
             width: 300px;
             height: 500px;
-            border: 2px solid black;
-            position: relative;
             background-color: gray;
+            border: 2px solid black;
+            margin: 0 auto;
+            position: relative;
             overflow: hidden;
         }
-        #ship {
+        #urhajo {
             width: 30px;
             height: 30px;
-            font-size: 24px;
-            text-align: center;
-            line-height: 30px;
             position: absolute;
-            left: 135px;
-            top: 450px;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
         }
-        .obstacle, .powerup {
+        .akadaly {
             width: 30px;
             height: 30px;
-            font-size: 24px;
-            text-align: center;
-            line-height: 30px;
             position: absolute;
+            top: 0;
         }
         .powerup {
-            color: yellow;
+            width: 30px;
+            height: 30px;
+            position: absolute;
+        }
+        #eredmenytabla {
+            margin-top: 10px;
         }
         #joystick-container {
             position: absolute;
-            bottom: 120px;
+            bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
-            width: 100px;
-            height: 100px;
+            width: 120px;
+            height: 120px;
             background: rgba(0, 0, 0, 0.1);
             border-radius: 50%;
             display: flex;
@@ -67,160 +64,133 @@
             justify-content: center;
         }
         #joystick {
-            width: 50px;
-            height: 50px;
+            width: 60px;
+            height: 60px;
             background-color: black;
             border-radius: 50%;
             position: relative;
             cursor: grab;
         }
-        #restartBtn {
-            display: none;
-            margin-top: 10px;
-            padding: 10px 20px;
-            font-size: 16px;
+        #lovesGomb {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            width: 80px;
+            height: 80px;
             background-color: red;
             color: white;
+            font-size: 16px;
+            border-radius: 50%;
             border: none;
             cursor: pointer;
         }
     </style>
 </head>
 <body>
-    <h2>Űrhajós Játék</h2>
-    <div id="game-container">
-        <div id="score">Pontok: 0</div>
-        <div id="game">
-            <div id="ship">🚀</div>
-        </div>
+    <h1>Űrhajós Játék</h1>
+    <div id="pontszamlalo">Pontok: 0</div>
+    <div id="jatekter">
+        <img id="urhajo" src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/SpaceX_Falcon_9.svg/1200px-SpaceX_Falcon_9.svg.png" alt="Űrhajó">
     </div>
     <div id="joystick-container">
         <div id="joystick"></div>
     </div>
-    <button id="restartBtn">Újraindítás</button>
+    <button id="lovesGomb">Lövés</button>
+    <h2>Eredménytábla</h2>
+    <ul id="eredmenytabla"></ul>
 
     <script>
-        const game = document.getElementById("game");
-        const ship = document.getElementById("ship");
+        const urhajo = document.getElementById("urhajo");
+        const jatekter = document.getElementById("jatekter");
+        const pontszamlalo = document.getElementById("pontszamlalo");
+        const eredmenytabla = document.getElementById("eredmenytabla");
         const joystick = document.getElementById("joystick");
-        const joystickContainer = document.getElementById("joystick-container");
-        const scoreDisplay = document.getElementById("score");
-        const restartBtn = document.getElementById("restartBtn");
+        const lovesGomb = document.getElementById("lovesGomb");
 
-        let shipX = 135;
-        let shipY = 450;
-        let score = 0;
-        let gameOver = false;
+        let pontok = 0;
+        let maxPontok = [];
 
-        function updateShipPosition() {
-            ship.style.left = `${shipX}px`;
-            ship.style.top = `${shipY}px`;
+        function veletlen(szam) {
+            return Math.floor(Math.random() * szam);
         }
 
-        function createObstacle() {
-            if (gameOver) return;
-            let obstacle = document.createElement("div");
-            obstacle.classList.add("obstacle");
-            obstacle.textContent = "🌑";
-            obstacle.style.left = `${Math.random() * 270}px`;
-            obstacle.style.top = "-30px";
-            game.appendChild(obstacle);
+        function ujAkadaly() {
+            let akadaly = document.createElement("div");
+            akadaly.classList.add("akadaly");
+            akadaly.style.left = veletlen(jatekter.clientWidth - 30) + "px";
+            akadaly.style.top = "0px";
+            akadaly.innerHTML = "🌑";
+            jatekter.appendChild(akadaly);
 
-            let speed = Math.random() * 2 + 2;
-            let interval = setInterval(() => {
-                if (gameOver) {
-                    clearInterval(interval);
-                    return;
-                }
-                let top = parseInt(obstacle.style.top);
-                if (top > 500) {
-                    obstacle.remove();
-                    clearInterval(interval);
+            let sebesseg = Math.random() * 2 + 1;
+            function mozgas() {
+                let topErtek = parseInt(akadaly.style.top);
+                if (topErtek < jatekter.clientHeight) {
+                    akadaly.style.top = topErtek + sebesseg + "px";
+                    requestAnimationFrame(mozgas);
                 } else {
-                    obstacle.style.top = `${top + speed}px`;
+                    jatekter.removeChild(akadaly);
+                    pontok++;
+                    pontszamlalo.innerText = "Pontok: " + pontok;
                 }
-                checkCollision(obstacle);
-            }, 30);
+            }
+            mozgas();
         }
 
-        function createPowerup() {
-            if (gameOver) return;
+        function ujPowerup() {
             let powerup = document.createElement("div");
             powerup.classList.add("powerup");
-            powerup.textContent = "🔅";
-            powerup.style.left = `${Math.random() * 270}px`;
-            powerup.style.top = "-30px";
-            game.appendChild(powerup);
+            powerup.style.left = veletlen(jatekter.clientWidth - 30) + "px";
+            powerup.style.top = "0px";
+            powerup.innerHTML = "🔅";
+            jatekter.appendChild(powerup);
 
-            let speed = 2;
-            let interval = setInterval(() => {
-                if (gameOver) {
-                    clearInterval(interval);
-                    return;
-                }
-                let top = parseInt(powerup.style.top);
-                if (top > 500) {
-                    powerup.remove();
-                    clearInterval(interval);
+            let sebesseg = 2;
+            function mozgas() {
+                let topErtek = parseInt(powerup.style.top);
+                if (topErtek < jatekter.clientHeight) {
+                    powerup.style.top = topErtek + sebesseg + "px";
+                    requestAnimationFrame(mozgas);
                 } else {
-                    powerup.style.top = `${top + speed}px`;
+                    jatekter.removeChild(powerup);
                 }
-                checkPowerupCollision(powerup);
-            }, 30);
-        }
-
-        function checkCollision(obstacle) {
-            let obstacleRect = obstacle.getBoundingClientRect();
-            let shipRect = ship.getBoundingClientRect();
-            if (
-                obstacleRect.left < shipRect.right &&
-                obstacleRect.right > shipRect.left &&
-                obstacleRect.top < shipRect.bottom &&
-                obstacleRect.bottom > shipRect.top
-            ) {
-                endGame();
             }
+            mozgas();
         }
 
-        function checkPowerupCollision(powerup) {
-            let powerupRect = powerup.getBoundingClientRect();
-            let shipRect = ship.getBoundingClientRect();
-            if (
-                powerupRect.left < shipRect.right &&
-                powerupRect.right > shipRect.left &&
-                powerupRect.top < shipRect.bottom &&
-                powerupRect.bottom > shipRect.top
-            ) {
-                score += 5;
-                scoreDisplay.textContent = `Pontok: ${score}`;
-                powerup.remove();
+        function loves() {
+            let lovedek = document.createElement("div");
+            lovedek.classList.add("akadaly");
+            lovedek.style.left = urhajo.offsetLeft + "px";
+            lovedek.style.bottom = "30px";
+            lovedek.innerHTML = "🔥";
+            jatekter.appendChild(lovedek);
+
+            function mozgas() {
+                let bottomErtek = parseInt(lovedek.style.bottom);
+                if (bottomErtek < jatekter.clientHeight) {
+                    lovedek.style.bottom = bottomErtek + 5 + "px";
+                    requestAnimationFrame(mozgas);
+                } else {
+                    jatekter.removeChild(lovedek);
+                }
             }
+            mozgas();
         }
 
-        function endGame() {
-            gameOver = true;
-            document.querySelectorAll(".obstacle, .powerup").forEach(el => el.remove());
-            restartBtn.style.display = "block";
-        }
+        lovesGomb.addEventListener("click", loves);
+        setInterval(ujAkadaly, 2000);
+        setInterval(ujPowerup, 8000);
 
-        restartBtn.addEventListener("click", () => {
-            gameOver = false;
-            score = 0;
-            scoreDisplay.textContent = "Pontok: 0";
-            restartBtn.style.display = "none";
-            setInterval(createObstacle, 1000);
-            setInterval(createPowerup, 5000);
-        });
-
+        let joystickX = 0, joystickY = 0;
         joystick.addEventListener("touchmove", (event) => {
             let touch = event.touches[0];
-            let rect = joystickContainer.getBoundingClientRect();
-            let deltaX = touch.clientX - (rect.left + 50);
-            let deltaY = touch.clientY - (rect.top + 50);
-
-            let distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+            let rect = joystick.getBoundingClientRect();
+            let deltaX = touch.clientX - rect.left - joystick.clientWidth / 2;
+            let deltaY = touch.clientY - rect.top - joystick.clientHeight / 2;
+            
             let maxDistance = 40;
-
+            let distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
             if (distance > maxDistance) {
                 deltaX = (deltaX / distance) * maxDistance;
                 deltaY = (deltaY / distance) * maxDistance;
@@ -228,19 +198,12 @@
 
             joystick.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
 
-            shipX = Math.max(0, Math.min(270, shipX + deltaX * 0.2));
-            shipY = Math.max(0, Math.min(470, shipY + deltaY * 0.2));
-
-            updateShipPosition();
-            event.preventDefault();
+            urhajo.style.left = Math.max(0, Math.min(jatekter.clientWidth - 30, urhajo.offsetLeft + deltaX * 0.1)) + "px";
         });
 
         joystick.addEventListener("touchend", () => {
             joystick.style.transform = "translate(0, 0)";
         });
-
-        setInterval(createObstacle, 1000);
-        setInterval(createPowerup, 5000);
     </script>
 </body>
 </html>
