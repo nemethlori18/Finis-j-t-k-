@@ -63,6 +63,7 @@
 
     <h1>Űrhajós Játék</h1>
     <p>Pontszám: <span id="score">0</span></p>
+    <p>Legmagasabb pontszám: <span id="highscore">0</span></p>
 
     <canvas id="gameCanvas"></canvas>
 
@@ -91,11 +92,13 @@
         let obstacles = [];
         let powerups = [];
         let score = 0;
+        let highscore = localStorage.getItem("highscore") || 0;
         let isGameOver = false;
         let joystickActive = false;
         let joystickStartX, joystickCenterX;
 
         document.getElementById("score").innerText = score;
+        document.getElementById("highscore").innerText = highscore;
 
         function drawSpaceship() {
             ctx.font = "25px Arial";
@@ -145,6 +148,14 @@
                 ) {
                     score += 1;
                     document.getElementById("score").innerText = score;
+
+                    // Highscore frissítése
+                    if (score > highscore) {
+                        highscore = score;
+                        localStorage.setItem("highscore", highscore);
+                        document.getElementById("highscore").innerText = highscore;
+                    }
+
                     return false;
                 }
                 return true;
@@ -165,8 +176,10 @@
         function restartGame() {
             document.getElementById("game-over").style.display = "none";
             isGameOver = false;
+            
             score = 0;
             document.getElementById("score").innerText = score;
+
             spaceship.x = canvas.width / 2 - 20;
             obstacles = [];
             powerups = [];
