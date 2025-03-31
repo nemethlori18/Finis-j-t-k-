@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Űrhajós Játék</title>
+    <title>Lóri Űrhajós Játéka</title>
     <style>
         body {
             text-align: center;
@@ -86,15 +86,14 @@
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
 
-        // Játékfelület beállítása
         canvas.width = window.innerWidth * 0.9;
         canvas.height = window.innerHeight * 0.6;
 
         let spaceship = { 
-            x: canvas.width / 2 - 25, 
-            y: canvas.height - 70,
-            width: 50, 
-            height: 50  
+            x: canvas.width / 2 - 20, 
+            y: canvas.height - 60,
+            width: 40, 
+            height: 40  
         };
         let obstacles = [];
         let powerups = [];
@@ -104,26 +103,26 @@
         document.getElementById("highscore").innerText = highscore;
 
         function drawSpaceship() {
-            ctx.font = "30px Arial";
+            ctx.font = "25px Arial";
             ctx.fillText("🚀", spaceship.x, spaceship.y);
         }
 
         function drawObstacles() {
-            ctx.font = "30px Arial";
+            ctx.font = "25px Arial";
             obstacles.forEach(obstacle => {
                 ctx.fillText("💥", obstacle.x, obstacle.y);
             });
         }
 
         function drawPowerups() {
-            ctx.font = "30px Arial";
+            ctx.font = "25px Arial";
             powerups.forEach(powerup => {
                 ctx.fillText("☀️", powerup.x, powerup.y);
             });
         }
 
         function drawBullets() {
-            ctx.font = "30px Arial";
+            ctx.font = "25px Arial";
             bullets.forEach(bullet => {
                 ctx.fillText("🔴", bullet.x, bullet.y);
             });
@@ -136,29 +135,35 @@
             drawPowerups();
             drawBullets();
 
-            // Mozgás frissítése
             obstacles.forEach(obstacle => obstacle.y += 2);
             powerups.forEach(powerup => powerup.y += 2);
             bullets.forEach(bullet => bullet.y -= 5);
 
-            // Lövedék és akadály ütközése
             bullets.forEach((bullet, bulletIndex) => {
                 obstacles.forEach((obstacle, obstacleIndex) => {
-                    if (bullet.x < obstacle.x + 30 && bullet.x + 20 > obstacle.x &&
-                        bullet.y < obstacle.y + 30 && bullet.y + 20 > obstacle.y) {
-                        obstacles.splice(obstacleIndex, 1); // Akadály eltávolítása
-                        bullets.splice(bulletIndex, 1); // Lövedék eltávolítása
+                    if (bullet.x < obstacle.x + 20 && bullet.x + 15 > obstacle.x &&
+                        bullet.y < obstacle.y + 20 && bullet.y + 15 > obstacle.y) {
+                        obstacles.splice(obstacleIndex, 1);
+                        bullets.splice(bulletIndex, 1);
                         score += 1;
                         document.getElementById("score").innerText = score;
                     }
                 });
             });
 
-            // Akadály és űrhajó ütközése
             obstacles.forEach(obstacle => {
-                if (spaceship.x < obstacle.x + 30 && spaceship.x + spaceship.width > obstacle.x &&
-                    spaceship.y < obstacle.y + 30 && spaceship.y + spaceship.height > obstacle.y) {
+                if (spaceship.x < obstacle.x + 20 && spaceship.x + spaceship.width > obstacle.x &&
+                    spaceship.y < obstacle.y + 20 && spaceship.y + spaceship.height > obstacle.y) {
                     gameOver();
+                }
+            });
+
+            powerups.forEach((powerup, index) => {
+                if (spaceship.x < powerup.x + 20 && spaceship.x + spaceship.width > powerup.x &&
+                    spaceship.y < powerup.y + 20 && spaceship.y + spaceship.height > powerup.y) {
+                    score += 1;
+                    document.getElementById("score").innerText = score;
+                    powerups.splice(index, 1);
                 }
             });
 
@@ -178,8 +183,8 @@
             }
             score = 0;
             document.getElementById("score").innerText = score;
-            spaceship.x = canvas.width / 2 - 25;
-            spaceship.y = canvas.height - 70;
+            spaceship.x = canvas.width / 2 - 20;
+            spaceship.y = canvas.height - 60;
             obstacles = [];
             powerups = [];
             bullets = [];
@@ -201,7 +206,6 @@
         setInterval(spawnPowerup, 5000);
         updateGame();
 
-        // Joystick vezérlés
         const joystick = document.querySelector(".joystick");
         let isMoving = false;
 
@@ -212,8 +216,7 @@
         joystick.addEventListener("touchmove", (event) => {
             if (isMoving) {
                 let touchX = event.touches[0].clientX - canvas.offsetLeft;
-                let canvasWidth = canvas.width;
-                if (touchX > 0 && touchX < canvasWidth) {
+                if (touchX > 0 && touchX < canvas.width) {
                     spaceship.x = touchX - spaceship.width / 2;
                 }
             }
@@ -223,7 +226,6 @@
             isMoving = false;
         });
 
-        // Billentyűzet vezérlés
         document.addEventListener("keydown", (event) => {
             if (event.key === "ArrowLeft" && spaceship.x > 0) {
                 spaceship.x -= 10;
