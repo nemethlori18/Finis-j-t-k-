@@ -25,6 +25,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            touch-action: none;
         }
         .joystick {
             width: 40px;
@@ -55,7 +56,7 @@
     <p>Legtöbb elért pont: <span id="highscore">0</span></p>
     <canvas id="gameCanvas" width="300" height="400"></canvas>
     
-    <div class="joystick-container">
+    <div class="joystick-container" id="joystickContainer">
         <div class="joystick"></div>
     </div>
     
@@ -67,6 +68,7 @@
         const ctx = canvas.getContext("2d");
         const scoreElement = document.getElementById("score");
         const highscoreElement = document.getElementById("highscore");
+        const joystickContainer = document.getElementById("joystickContainer");
 
         let spaceship = { x: 150, y: 350, size: 20, emoji: "🚀" };
         let obstacles = [];
@@ -78,7 +80,6 @@
 
         function drawGame() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-
             ctx.font = "20px Arial";
             ctx.fillText(spaceship.emoji, spaceship.x, spaceship.y);
 
@@ -166,6 +167,28 @@
             }
             if (event.key === "ArrowRight" && spaceship.x < canvas.width - spaceship.size) {
                 spaceship.x += 20;
+            }
+        });
+
+        // JOYSTICK MŰKÖDÉS
+        let joystickActive = false;
+
+        joystickContainer.addEventListener("touchstart", () => {
+            joystickActive = true;
+        });
+
+        joystickContainer.addEventListener("touchend", () => {
+            joystickActive = false;
+        });
+
+        joystickContainer.addEventListener("touchmove", (event) => {
+            if (joystickActive) {
+                const touchX = event.touches[0].clientX;
+                const canvasRect = canvas.getBoundingClientRect();
+                const relativeX = touchX - canvasRect.left;
+                if (relativeX > 0 && relativeX < canvas.width) {
+                    spaceship.x = relativeX;
+                }
             }
         });
 
