@@ -3,60 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Űrhajós Játék</title>
+    <title>Űrhajós Joystick Játék</title>
     <style>
         body {
-            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: white;
             font-family: Arial, sans-serif;
             margin: 0;
-            padding: 0;
-            background-color: white;
         }
-        h1 {
-            margin-top: 10px;
-        }
-        #pontszamlalo {
-            font-size: 18px;
-            margin-bottom: 10px;
-        }
-        #jatekter {
+        #game {
             width: 300px;
-            height: 500px;
-            background-color: gray;
+            height: 400px;
             border: 2px solid black;
-            margin: 0 auto;
             position: relative;
+            background-color: gray;
             overflow: hidden;
         }
-        #urhajo {
+        #ship {
             width: 30px;
             height: 30px;
+            font-size: 24px;
+            text-align: center;
+            line-height: 30px;
             position: absolute;
-            bottom: 10px;
-            left: 50%;
-            transform: translateX(-50%);
+            left: 135px;
+            top: 350px;
         }
-        .akadaly {
+        .obstacle, .powerup, .bullet {
             width: 30px;
             height: 30px;
-            position: absolute;
-            top: 0;
-        }
-        .powerup {
-            width: 30px;
-            height: 30px;
+            font-size: 24px;
+            text-align: center;
+            line-height: 30px;
             position: absolute;
         }
-        #eredmenytabla {
-            margin-top: 10px;
+        .bullet {
+            font-size: 20px;
         }
         #joystick-container {
             position: absolute;
-            bottom: 20px;
+            bottom: 60px;
             left: 50%;
             transform: translateX(-50%);
-            width: 120px;
-            height: 120px;
+            width: 100px;
+            height: 100px;
             background: rgba(0, 0, 0, 0.1);
             border-radius: 50%;
             display: flex;
@@ -64,146 +58,174 @@
             justify-content: center;
         }
         #joystick {
-            width: 60px;
-            height: 60px;
+            width: 50px;
+            height: 50px;
             background-color: black;
             border-radius: 50%;
             position: relative;
             cursor: grab;
         }
-        #lovesGomb {
-            position: absolute;
-            bottom: 30px;
-            right: 30px;
-            width: 80px;
-            height: 80px;
-            background-color: red;
-            color: white;
+        #scoreboard {
+            margin-top: 10px;
+            font-size: 18px;
+        }
+        #restartBtn, #shootBtn {
+            margin-top: 10px;
+            padding: 10px;
             font-size: 16px;
-            border-radius: 50%;
-            border: none;
             cursor: pointer;
         }
     </style>
 </head>
 <body>
-    <h1>Űrhajós Játék</h1>
-    <div id="pontszamlalo">Pontok: 0</div>
-    <div id="jatekter">
-        <img id="urhajo" src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/SpaceX_Falcon_9.svg/1200px-SpaceX_Falcon_9.svg.png" alt="Űrhajó">
+    <h2>Űrhajós Joystick Játék</h2>
+    <div id="scoreboard">Pontszám: 0</div>
+    <div id="game">
+        <div id="ship">🚀</div>
     </div>
+    <button id="shootBtn">Lövés</button>
     <div id="joystick-container">
         <div id="joystick"></div>
     </div>
-    <button id="lovesGomb">Lövés</button>
-    <h2>Eredménytábla</h2>
-    <ul id="eredmenytabla"></ul>
+    <button id="restartBtn" style="display: none;">Újraindítás</button>
 
     <script>
-        const urhajo = document.getElementById("urhajo");
-        const jatekter = document.getElementById("jatekter");
-        const pontszamlalo = document.getElementById("pontszamlalo");
-        const eredmenytabla = document.getElementById("eredmenytabla");
+        const game = document.getElementById("game");
+        const ship = document.getElementById("ship");
         const joystick = document.getElementById("joystick");
-        const lovesGomb = document.getElementById("lovesGomb");
+        const joystickContainer = document.getElementById("joystick-container");
+        const scoreboard = document.getElementById("scoreboard");
+        const restartBtn = document.getElementById("restartBtn");
+        const shootBtn = document.getElementById("shootBtn");
 
-        let pontok = 0;
-        let maxPontok = [];
+        let shipX = 135, shipY = 350;
+        let joystickCenterX = 50, joystickCenterY = 50;
+        let score = 0, gameOver = false;
+        let powerupActive = false;
 
-        function veletlen(szam) {
-            return Math.floor(Math.random() * szam);
+        function updateShipPosition() {
+            ship.style.left = `${shipX}px`;
+            ship.style.top = `${shipY}px`;
         }
 
-        function ujAkadaly() {
-            let akadaly = document.createElement("div");
-            akadaly.classList.add("akadaly");
-            akadaly.style.left = veletlen(jatekter.clientWidth - 30) + "px";
-            akadaly.style.top = "0px";
-            akadaly.innerHTML = "🌑";
-            jatekter.appendChild(akadaly);
-
-            let sebesseg = Math.random() * 2 + 1;
-            function mozgas() {
-                let topErtek = parseInt(akadaly.style.top);
-                if (topErtek < jatekter.clientHeight) {
-                    akadaly.style.top = topErtek + sebesseg + "px";
-                    requestAnimationFrame(mozgas);
+        function createObstacle() {
+            if (gameOver) return;
+            let obstacle = document.createElement("div");
+            obstacle.classList.add("obstacle");
+            obstacle.textContent = "🪨";
+            let size = 30;
+            obstacle.style.width = `${size}px`;
+            obstacle.style.height = `${size}px`;
+            obstacle.style.left = `${Math.random() * (game.clientWidth - size)}px`;
+            obstacle.style.top = `-30px`;
+            game.appendChild(obstacle);
+            let speed = Math.random() * 3 + 2;
+            function moveObstacle() {
+                if (gameOver) return;
+                let obstacleTop = parseInt(obstacle.style.top);
+                if (obstacleTop > game.clientHeight) {
+                    obstacle.remove();
+                    score++;
+                    scoreboard.textContent = `Pontszám: ${score}`;
                 } else {
-                    jatekter.removeChild(akadaly);
-                    pontok++;
-                    pontszamlalo.innerText = "Pontok: " + pontok;
+                    obstacle.style.top = `${obstacleTop + speed}px`;
+                    requestAnimationFrame(moveObstacle);
                 }
             }
-            mozgas();
+            moveObstacle();
         }
 
-        function ujPowerup() {
+        function createPowerup() {
+            if (gameOver) return;
             let powerup = document.createElement("div");
             powerup.classList.add("powerup");
-            powerup.style.left = veletlen(jatekter.clientWidth - 30) + "px";
-            powerup.style.top = "0px";
-            powerup.innerHTML = "🔅";
-            jatekter.appendChild(powerup);
-
-            let sebesseg = 2;
-            function mozgas() {
-                let topErtek = parseInt(powerup.style.top);
-                if (topErtek < jatekter.clientHeight) {
-                    powerup.style.top = topErtek + sebesseg + "px";
-                    requestAnimationFrame(mozgas);
+            powerup.textContent = "🔅";
+            powerup.style.left = `${Math.random() * (game.clientWidth - 30)}px`;
+            powerup.style.top = `-30px`;
+            game.appendChild(powerup);
+            let speed = 2;
+            function movePowerup() {
+                if (gameOver) return;
+                let powerupTop = parseInt(powerup.style.top);
+                if (powerupTop > game.clientHeight) {
+                    powerup.remove();
                 } else {
-                    jatekter.removeChild(powerup);
+                    powerup.style.top = `${powerupTop + speed}px`;
+                    requestAnimationFrame(movePowerup);
                 }
             }
-            mozgas();
+            movePowerup();
         }
 
-        function loves() {
-            let lovedek = document.createElement("div");
-            lovedek.classList.add("akadaly");
-            lovedek.style.left = urhajo.offsetLeft + "px";
-            lovedek.style.bottom = "30px";
-            lovedek.innerHTML = "🔥";
-            jatekter.appendChild(lovedek);
-
-            function mozgas() {
-                let bottomErtek = parseInt(lovedek.style.bottom);
-                if (bottomErtek < jatekter.clientHeight) {
-                    lovedek.style.bottom = bottomErtek + 5 + "px";
-                    requestAnimationFrame(mozgas);
+        function shoot() {
+            if (gameOver) return;
+            let bullet = document.createElement("div");
+            bullet.classList.add("bullet");
+            bullet.textContent = "🔥";
+            bullet.style.left = `${shipX + 10}px`;
+            bullet.style.top = `${shipY}px`;
+            game.appendChild(bullet);
+            function moveBullet() {
+                if (gameOver) return;
+                let bulletTop = parseInt(bullet.style.top);
+                if (bulletTop < -10) {
+                    bullet.remove();
                 } else {
-                    jatekter.removeChild(lovedek);
+                    bullet.style.top = `${bulletTop - 5}px`;
+                    requestAnimationFrame(moveBullet);
                 }
             }
-            mozgas();
+            moveBullet();
         }
 
-        lovesGomb.addEventListener("click", loves);
-        setInterval(ujAkadaly, 2000);
-        setInterval(ujPowerup, 8000);
+        function checkCollision() {
+            if (gameOver) return;
+            document.querySelectorAll(".obstacle").forEach(obstacle => {
+                let obsX = parseInt(obstacle.style.left);
+                let obsY = parseInt(obstacle.style.top);
+                if (shipX < obsX + 30 && shipX + 30 > obsX && shipY < obsY + 30 && shipY + 30 > obsY) {
+                    if (!powerupActive) {
+                        gameOver = true;
+                        restartBtn.style.display = "block";
+                    }
+                }
+            });
+            document.querySelectorAll(".powerup").forEach(powerup => {
+                let powerX = parseInt(powerup.style.left);
+                let powerY = parseInt(powerup.style.top);
+                if (shipX < powerX + 30 && shipX + 30 > powerX && shipY < powerY + 30 && shipY + 30 > powerY) {
+                    powerup.remove();
+                    powerupActive = true;
+                    setTimeout(() => { powerupActive = false; }, 5000);
+                }
+            });
+            requestAnimationFrame(checkCollision);
+        }
 
-        let joystickX = 0, joystickY = 0;
         joystick.addEventListener("touchmove", (event) => {
             let touch = event.touches[0];
-            let rect = joystick.getBoundingClientRect();
-            let deltaX = touch.clientX - rect.left - joystick.clientWidth / 2;
-            let deltaY = touch.clientY - rect.top - joystick.clientHeight / 2;
-            
-            let maxDistance = 40;
+            let rect = joystickContainer.getBoundingClientRect();
+            let deltaX = touch.clientX - (rect.left + joystickCenterX);
+            let deltaY = touch.clientY - (rect.top + joystickCenterY);
             let distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+            let maxDistance = 40;
             if (distance > maxDistance) {
                 deltaX = (deltaX / distance) * maxDistance;
                 deltaY = (deltaY / distance) * maxDistance;
             }
-
             joystick.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
-
-            urhajo.style.left = Math.max(0, Math.min(jatekter.clientWidth - 30, urhajo.offsetLeft + deltaX * 0.1)) + "px";
+            shipX = Math.max(0, Math.min(game.clientWidth - 30, shipX + deltaX * 0.1));
+            shipY = Math.max(0, Math.min(game.clientHeight - 30, shipY + deltaY * 0.1));
+            updateShipPosition();
+            event.preventDefault();
         });
 
-        joystick.addEventListener("touchend", () => {
-            joystick.style.transform = "translate(0, 0)";
-        });
+        restartBtn.addEventListener("click", () => { location.reload(); });
+        shootBtn.addEventListener("click", shoot);
+
+        setInterval(createObstacle, 2000);
+        setInterval(createPowerup, 10000);
+        checkCollision();
     </script>
 </body>
 </html>
