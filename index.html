@@ -10,53 +10,57 @@
             font-family: Arial, sans-serif;
         }
         canvas {
-            display: block;
-            margin: 10px auto;
             background: lightgray;
+            display: block;
+            margin: 20px auto;
             border: 2px solid black;
         }
-        .controls {
-            margin-top: 20px;
-        }
-        button {
-            padding: 10px;
-            font-size: 16px;
-            margin: 5px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        #shoot {
-            background-color: red;
-            color: white;
-        }
-        #restart {
-            background-color: lightblue;
+        .joystick-container {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            margin: 20px auto;
+            background: lightgray;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         .joystick {
-            width: 50px;
-            height: 50px;
+            width: 40px;
+            height: 40px;
             background: black;
             border-radius: 50%;
-            display: inline-block;
-            margin: 10px;
+        }
+        .button {
+            display: block;
+            margin: 10px auto;
+            padding: 10px;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+        }
+        .shoot-button {
+            background: red;
+            color: white;
+        }
+        .reset-button {
+            background: lightblue;
         }
     </style>
 </head>
 <body>
-
-    <h1>Űrhajós Játék</h1>
+    <h2>Űrhajós Játék</h2>
     <p>Pontszám: <span id="score">0</span></p>
     <p>Legtöbb elért pont: <span id="highscore">0</span></p>
-
     <canvas id="gameCanvas" width="300" height="400"></canvas>
-
-    <div class="controls">
-        <div class="joystick" id="left"></div>
-        <button id="shoot">Lövés</button>
-        <div class="joystick" id="right"></div>
+    
+    <div class="joystick-container">
+        <div class="joystick"></div>
     </div>
-    <button id="restart">Újraindítás</button>
+    
+    <button class="button shoot-button" onclick="shootBullet()">Lövés</button>
+    <button class="button reset-button" onclick="resetGame()">Újraindítás</button>
 
     <script>
         const canvas = document.getElementById("gameCanvas");
@@ -64,58 +68,49 @@
         const scoreElement = document.getElementById("score");
         const highscoreElement = document.getElementById("highscore");
 
-        let spaceship = { x: 135, y: 350, width: 30, height: 30 };
-        let bullets = [];
+        let spaceship = { x: 150, y: 350, size: 20, emoji: "🚀" };
         let obstacles = [];
         let powerups = [];
+        let bullets = [];
         let score = 0;
         let highscore = localStorage.getItem("highscore") || 0;
         highscoreElement.innerText = highscore;
 
-        function drawSpaceship() {
-            ctx.fillStyle = "red";
-            ctx.fillRect(spaceship.x, spaceship.y, spaceship.width, spaceship.height);
-        }
+        function drawGame() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        function drawBullets() {
-            ctx.fillStyle = "yellow";
-            bullets.forEach((bullet, index) => {
-                ctx.fillRect(bullet.x, bullet.y, 5, 10);
-                bullet.y -= 5;
-                if (bullet.y < 0) bullets.splice(index, 1);
+            ctx.font = "20px Arial";
+            ctx.fillText(spaceship.emoji, spaceship.x, spaceship.y);
+
+            obstacles.forEach(obstacle => {
+                ctx.fillText("🌑", obstacle.x, obstacle.y);
+            });
+
+            powerups.forEach(powerup => {
+                ctx.fillText("⭐", powerup.x, powerup.y);
+            });
+
+            bullets.forEach(bullet => {
+                ctx.fillText("💥", bullet.x, bullet.y);
             });
         }
 
-        function drawObstacles() {
-            ctx.fillStyle = "blue";
-            obstacles.forEach((obstacle, index) => {
-                ctx.fillRect(obstacle.x, obstacle.y, 30, 30);
-                obstacle.y += 2;
-                if (obstacle.y > canvas.height) obstacles.splice(index, 1);
-                if (checkCollision(spaceship, obstacle)) resetGame();
-            });
-        }
+        function updateGame() {
+            obstacles.forEach(obstacle => obstacle.y += 2);
+            powerups.forEach(powerup => powerup.y += 2);
+            bullets.forEach(bullet => bullet.y -= 5);
 
-        function drawPowerups() {
-            ctx.fillStyle = "green";
-            powerups.forEach((powerup, index) => {
-                ctx.fillRect(powerup.x, powerup.y, 20, 20);
-                powerup.y += 2;
-                if (powerup.y > canvas.height) powerups.splice(index, 1);
-                if (checkCollision(spaceship, powerup)) {
-                    score += 5;
-                    powerups.splice(index, 1);
-                }
-            });
-        }
+            obstacles = obstacles.filter(obstacle => obstacle.y < canvas.height);
+            powerups = powerups.filter(powerup => powerup.y < canvas.height);
+            bullets = bullets.filter(bullet => bullet.y > 0);
 
-        function checkCollision(obj1, obj2) {
-            return obj1.x < obj2.x + 30 && obj1.x + obj1.width > obj2.x &&
-                   obj1.y < obj2.y + 30 && obj1.y + obj1.height > obj2.y;
+            checkCollisions();
+            drawGame();
+            requestAnimationFrame(updateGame);
         }
 
         function spawnObstacle() {
-            obstacles.push({ x: Math.random() * (canvas.width - 30), y: 0 });
+            obstacles.push({ x: Math.random() * (canvas.width - 20), y: 0 });
         }
 
         function spawnPowerup() {
@@ -123,28 +118,31 @@
         }
 
         function shootBullet() {
-            bullets.push({ x: spaceship.x + spaceship.width / 2, y: spaceship.y });
+            bullets.push({ x: spaceship.x + spaceship.size / 2, y: spaceship.y });
         }
 
-        function updateGame() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            drawSpaceship();
-            drawBullets();
-            drawObstacles();
-            drawPowerups();
-
-            bullets.forEach((bullet, bulletIndex) => {
-                obstacles.forEach((obstacle, obsIndex) => {
-                    if (checkCollision(bullet, obstacle)) {
-                        obstacles.splice(obsIndex, 1);
+        function checkCollisions() {
+            obstacles.forEach((obstacle, index) => {
+                if (Math.abs(obstacle.x - spaceship.x) < 15 && Math.abs(obstacle.y - spaceship.y) < 15) {
+                    resetGame();
+                }
+                bullets.forEach((bullet, bulletIndex) => {
+                    if (Math.abs(bullet.x - obstacle.x) < 10 && Math.abs(bullet.y - obstacle.y) < 10) {
+                        obstacles.splice(index, 1);
                         bullets.splice(bulletIndex, 1);
-                        score += 1;
+                        score += 10;
+                        scoreElement.innerText = score;
                     }
                 });
             });
 
-            scoreElement.innerText = score;
-            requestAnimationFrame(updateGame);
+            powerups.forEach((powerup, index) => {
+                if (Math.abs(powerup.x - spaceship.x) < 15 && Math.abs(powerup.y - spaceship.y) < 15) {
+                    powerups.splice(index, 1);
+                    score += 20;
+                    scoreElement.innerText = score;
+                }
+            });
         }
 
         function resetGame() {
@@ -155,20 +153,20 @@
             }
             score = 0;
             scoreElement.innerText = score;
-            spaceship.x = 135;
-            spaceship.y = 350;
             obstacles = [];
             powerups = [];
             bullets = [];
+            spaceship.x = 150;
+            spaceship.y = 350;
         }
 
-        document.getElementById("shoot").addEventListener("click", shootBullet);
-        document.getElementById("restart").addEventListener("click", resetGame);
-        document.getElementById("left").addEventListener("click", () => {
-            if (spaceship.x > 0) spaceship.x -= 20;
-        });
-        document.getElementById("right").addEventListener("click", () => {
-            if (spaceship.x < canvas.width - spaceship.width) spaceship.x += 20;
+        document.addEventListener("keydown", (event) => {
+            if (event.key === "ArrowLeft" && spaceship.x > 0) {
+                spaceship.x -= 20;
+            }
+            if (event.key === "ArrowRight" && spaceship.x < canvas.width - spaceship.size) {
+                spaceship.x += 20;
+            }
         });
 
         setInterval(spawnObstacle, 2000);
