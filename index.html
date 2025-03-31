@@ -15,6 +15,15 @@
             font-family: Arial, sans-serif;
             margin: 0;
         }
+        #game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #score {
+            font-size: 20px;
+            margin-bottom: 10px;
+        }
         #game {
             width: 300px;
             height: 500px;
@@ -46,7 +55,7 @@
         }
         #joystick-container {
             position: absolute;
-            bottom: 20px;
+            bottom: 120px;
             left: 50%;
             transform: translateX(-50%);
             width: 100px;
@@ -65,10 +74,6 @@
             position: relative;
             cursor: grab;
         }
-        #score {
-            font-size: 18px;
-            margin-top: 10px;
-        }
         #restartBtn {
             display: none;
             margin-top: 10px;
@@ -83,9 +88,11 @@
 </head>
 <body>
     <h2>Űrhajós Játék</h2>
-    <div id="score">Pontok: 0</div>
-    <div id="game">
-        <div id="ship">🚀</div>
+    <div id="game-container">
+        <div id="score">Pontok: 0</div>
+        <div id="game">
+            <div id="ship">🚀</div>
+        </div>
     </div>
     <div id="joystick-container">
         <div id="joystick"></div>
@@ -102,8 +109,6 @@
 
         let shipX = 135;
         let shipY = 450;
-        let joystickCenterX = 50;
-        let joystickCenterY = 50;
         let score = 0;
         let gameOver = false;
 
@@ -114,7 +119,6 @@
 
         function createObstacle() {
             if (gameOver) return;
-
             let obstacle = document.createElement("div");
             obstacle.classList.add("obstacle");
             obstacle.textContent = "🌑";
@@ -141,7 +145,6 @@
 
         function createPowerup() {
             if (gameOver) return;
-
             let powerup = document.createElement("div");
             powerup.classList.add("powerup");
             powerup.textContent = "🔅";
@@ -212,8 +215,8 @@
         joystick.addEventListener("touchmove", (event) => {
             let touch = event.touches[0];
             let rect = joystickContainer.getBoundingClientRect();
-            let deltaX = touch.clientX - (rect.left + joystickCenterX);
-            let deltaY = touch.clientY - (rect.top + joystickCenterY);
+            let deltaX = touch.clientX - (rect.left + 50);
+            let deltaY = touch.clientY - (rect.top + 50);
 
             let distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
             let maxDistance = 40;
