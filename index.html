@@ -2,7 +2,7 @@
 <html lang="hu">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Űrhajós Joystick Játék</title>
     <style>
         body {
@@ -14,6 +14,7 @@
             background-color: white;
             font-family: Arial, sans-serif;
             margin: 0;
+            overflow: hidden;
         }
         #game {
             width: 250px;
@@ -31,24 +32,15 @@
             line-height: 30px;
             position: absolute;
             left: 110px;
-            top: 110px;
+            top: 200px;
         }
-        .obstacle {
+        .obstacle, .powerup {
             width: 30px;
             height: 30px;
             font-size: 24px;
             text-align: center;
             line-height: 30px;
             position: absolute;
-        }
-        .powerup {
-            width: 30px;
-            height: 30px;
-            font-size: 24px;
-            text-align: center;
-            line-height: 30px;
-            position: absolute;
-            color: gold;
         }
         .bullet {
             width: 5px;
@@ -79,7 +71,7 @@
             position: relative;
             cursor: grab;
         }
-        #shoot-button {
+        #shoot-button, #restart-button {
             margin-top: 10px;
             padding: 10px 20px;
             font-size: 16px;
@@ -89,15 +81,20 @@
             border-radius: 5px;
             cursor: pointer;
         }
-        #score {
+        #restart-button {
+            display: none;
+            background-color: blue;
+        }
+        #score, #high-score {
             font-size: 18px;
-            margin-top: 10px;
+            margin-top: 5px;
         }
     </style>
 </head>
 <body>
     <h2>Űrhajós Joystick Játék</h2>
     <div id="score">Pontszám: 0</div>
+    <div id="high-score">Legjobb: 0</div>
     <div id="game">
         <div id="ship">🚀</div>
     </div>
@@ -106,6 +103,7 @@
             <div id="joystick"></div>
         </div>
         <button id="shoot-button">Lövés</button>
+        <button id="restart-button">Újraindítás</button>
     </div>
 
     <script>
@@ -114,11 +112,17 @@
         const joystick = document.getElementById("joystick");
         const joystickContainer = document.getElementById("joystick-container");
         const shootButton = document.getElementById("shoot-button");
+        const restartButton = document.getElementById("restart-button");
         const scoreDisplay = document.getElementById("score");
+        const highScoreDisplay = document.getElementById("high-score");
 
         let shipX = 110;
-        let shipY = 110;
+        let shipY = 200;
         let score = 0;
+        let highScore = localStorage.getItem("highScore") || 0;
+        let gameRunning = true;
+
+        highScoreDisplay.textContent = `Legjobb: ${highScore}`;
 
         function updateShipPosition() {
             ship.style.left = `${shipX}px`;
@@ -126,6 +130,7 @@
         }
 
         joystick.addEventListener("touchmove", (event) => {
+            if (!gameRunning) return;
             let touch = event.touches[0];
             let rect = joystickContainer.getBoundingClientRect();
             let deltaX = touch.clientX - (rect.left + 50);
@@ -152,6 +157,7 @@
         });
 
         function createObstacle() {
+            if (!gameRunning) return;
             let obstacle = document.createElement("div");
             obstacle.classList.add("obstacle");
             obstacle.innerHTML = "💥";
@@ -167,6 +173,8 @@
                     game.removeChild(obstacle);
                     score++;
                     scoreDisplay.textContent = `Pontszám: ${score}`;
+                } else if (Math.abs(top - shipY) < 30 && Math.abs(parseInt(obstacle.style.left) - shipX) < 30) {
+                    endGame();
                 } else {
                     obstacle.style.top = `${top + speed}px`;
                     requestAnimationFrame(moveObstacle);
@@ -175,32 +183,8 @@
             moveObstacle();
         }
 
-        function createPowerUp() {
-            let powerup = document.createElement("div");
-            powerup.classList.add("powerup");
-            powerup.innerHTML = "🔅";
-            powerup.style.left = `${Math.random() * (game.clientWidth - 30)}px`;
-            powerup.style.top = "-30px";
-            game.appendChild(powerup);
-
-            function movePowerUp() {
-                if (!game.contains(powerup)) return;
-                let top = parseInt(powerup.style.top);
-                if (top > game.clientHeight) {
-                    game.removeChild(powerup);
-                } else if (Math.abs(top - shipY) < 30 && Math.abs(parseInt(powerup.style.left) - shipX) < 30) {
-                    game.removeChild(powerup);
-                    score += 5;
-                    scoreDisplay.textContent = `Pontszám: ${score}`;
-                } else {
-                    powerup.style.top = `${top + 2}px`;
-                    requestAnimationFrame(movePowerUp);
-                }
-            }
-            movePowerUp();
-        }
-
         function shoot() {
+            if (!gameRunning) return;
             let bullet = document.createElement("div");
             bullet.classList.add("bullet");
             bullet.style.left = `${shipX + 12}px`;
@@ -220,10 +204,30 @@
             moveBullet();
         }
 
+        function endGame() {
+            gameRunning = false;
+            restartButton.style.display = "block";
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem("highScore", highScore);
+            }
+            highScoreDisplay.textContent = `Legjobb: ${highScore}`;
+        }
+
+        function restartGame() {
+            game.innerHTML = '<div id="ship">🚀</div>';
+            shipX = 110;
+            shipY = 200;
+            score = 0;
+            scoreDisplay.textContent = "Pontszám: 0";
+            gameRunning = true;
+            restartButton.style.display = "none";
+        }
+
         shootButton.addEventListener("click", shoot);
+        restartButton.addEventListener("click", restartGame);
 
         setInterval(createObstacle, 1000);
-        setInterval(createPowerUp, 5000);
     </script>
 </body>
 </html>
