@@ -63,15 +63,15 @@
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
 
-        // Teljes képernyőhöz igazítás
+        // Játékfelület szélessége marad, de a magasság kisebb lesz
         canvas.width = window.innerWidth * 0.9;
-        canvas.height = window.innerHeight * 0.7;
+        canvas.height = window.innerHeight * 0.6; // Magasság csökkentve
 
         let spaceship = { 
-            x: canvas.width / 2 - 15, 
-            y: canvas.height - 50, // Lejjebb helyezve
-            width: 30, 
-            height: 30 
+            x: canvas.width / 2 - 30, 
+            y: canvas.height - 80, // Lejjebb helyezve
+            width: 60,  // Megnövelt méret
+            height: 60  
         };
         let obstacles = [];
         let powerups = [];
@@ -81,22 +81,26 @@
         document.getElementById("highscore").innerText = highscore;
 
         function drawSpaceship() {
+            ctx.font = "40px Arial"; // Nagyobb méretű emoji
             ctx.fillText("🚀", spaceship.x, spaceship.y);
         }
 
         function drawObstacles() {
+            ctx.font = "40px Arial"; // Nagyobb akadályok
             obstacles.forEach(obstacle => {
                 ctx.fillText("💥", obstacle.x, obstacle.y);
             });
         }
 
         function drawPowerups() {
+            ctx.font = "40px Arial"; // Nagyobb power-upok
             powerups.forEach(powerup => {
                 ctx.fillText("☀️", powerup.x, powerup.y);
             });
         }
 
         function drawBullets() {
+            ctx.font = "40px Arial"; // Nagyobb lövedékek
             bullets.forEach(bullet => {
                 ctx.fillText("🔴", bullet.x, bullet.y);
             });
@@ -116,16 +120,16 @@
 
             // Ütközés akadállyal
             obstacles.forEach(obstacle => {
-                if (spaceship.x < obstacle.x + 20 && spaceship.x + spaceship.width > obstacle.x &&
-                    spaceship.y < obstacle.y + 20 && spaceship.y + spaceship.height > obstacle.y) {
+                if (spaceship.x < obstacle.x + 40 && spaceship.x + spaceship.width > obstacle.x &&
+                    spaceship.y < obstacle.y + 40 && spaceship.y + spaceship.height > obstacle.y) {
                     resetGame();
                 }
             });
 
             // Power-up felvétel
             powerups.forEach((powerup, index) => {
-                if (spaceship.x < powerup.x + 20 && spaceship.x + spaceship.width > powerup.x &&
-                    spaceship.y < powerup.y + 20 && spaceship.y + spaceship.height > powerup.y) {
+                if (spaceship.x < powerup.x + 40 && spaceship.x + spaceship.width > powerup.x &&
+                    spaceship.y < powerup.y + 40 && spaceship.y + spaceship.height > powerup.y) {
                     score += 1; // 1 pont
                     document.getElementById("score").innerText = score;
                     powerups.splice(index, 1);
@@ -143,19 +147,19 @@
             }
             score = 0;
             document.getElementById("score").innerText = score;
-            spaceship.x = canvas.width / 2 - 15;
-            spaceship.y = canvas.height - 50;
+            spaceship.x = canvas.width / 2 - 30;
+            spaceship.y = canvas.height - 80;
             obstacles = [];
             powerups = [];
             bullets = [];
         }
 
         function spawnObstacle() {
-            obstacles.push({ x: Math.random() * (canvas.width - 20), y: 0 });
+            obstacles.push({ x: Math.random() * (canvas.width - 40), y: 0 });
         }
 
         function spawnPowerup() {
-            powerups.push({ x: Math.random() * (canvas.width - 20), y: 0 });
+            powerups.push({ x: Math.random() * (canvas.width - 40), y: 0 });
         }
 
         function shootBullet() {
