@@ -11,9 +11,11 @@
             align-items: center;
             justify-content: center;
             height: 100vh;
-            background: url("https://source.unsplash.com/800x600/?space,stars") no-repeat center center/cover;
+            background: url("https://cdn.pixabay.com/photo/2017/08/30/01/06/stars-2695569_1280.jpg") no-repeat center center/cover;
             font-family: Arial, sans-serif;
             margin: 0;
+            color: white;
+            text-align: center;
         }
         #game {
             width: 300px;
@@ -22,6 +24,7 @@
             position: relative;
             background-color: rgba(0, 0, 0, 0.5);
             overflow: hidden;
+            margin-bottom: 10px;
         }
         #spaceship {
             width: 40px;
@@ -60,16 +63,18 @@
             position: relative;
             cursor: grab;
         }
-        #score {
-            color: white;
+        #scoreboard {
             font-size: 18px;
             margin-bottom: 10px;
         }
     </style>
 </head>
 <body>
-    <h2 style="color: white;">Űrhajós Joystick Játék</h2>
-    <div id="score">Pontszám: 0</div>
+    <h2>Űrhajós Joystick Játék</h2>
+    <div id="scoreboard">
+        <p>Pontszám: <span id="score">0</span></p>
+        <p>Legjobb: <span id="highscore">0</span></p>
+    </div>
     <div id="game">
         <div id="spaceship">🚀</div>
     </div>
@@ -83,10 +88,13 @@
         const joystick = document.getElementById("joystick");
         const joystickContainer = document.getElementById("joystick-container");
         const scoreElement = document.getElementById("score");
+        const highScoreElement = document.getElementById("highscore");
 
         let shipX = 130;
         let shipY = 350;
         let score = 0;
+        let highScore = localStorage.getItem("highscore") || 0;
+        highScoreElement.textContent = highScore;
 
         function updateShipPosition() {
             spaceship.style.left = `${shipX}px`;
@@ -142,6 +150,10 @@
                         shipY < obstacleY + 40 &&
                         shipY + 40 > obstacleY
                     ) {
+                        if (score > highScore) {
+                            highScore = score;
+                            localStorage.setItem("highscore", highScore);
+                        }
                         alert("Game Over! Pontszám: " + score);
                         location.reload();
                     }
@@ -150,7 +162,7 @@
                 } else {
                     obstacle.remove();
                     score++;
-                    scoreElement.textContent = "Pontszám: " + score;
+                    scoreElement.textContent = score;
                 }
             }
 
