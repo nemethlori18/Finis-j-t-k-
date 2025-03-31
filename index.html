@@ -17,29 +17,29 @@
             overflow: hidden;
         }
         #game {
-            width: 250px;
-            height: 250px;
+            width: 400px;
+            height: 600px;
             border: 2px solid black;
             position: relative;
             background-color: gray;
             overflow: hidden;
         }
         #ship {
-            width: 30px;
-            height: 30px;
-            font-size: 24px;
+            width: 40px;
+            height: 40px;
+            font-size: 30px;
             text-align: center;
-            line-height: 30px;
+            line-height: 40px;
             position: absolute;
-            left: 110px;
-            top: 200px;
+            left: 180px;
+            top: 500px;
         }
         .obstacle, .powerup {
-            width: 30px;
-            height: 30px;
-            font-size: 24px;
+            width: 40px;
+            height: 40px;
+            font-size: 30px;
             text-align: center;
-            line-height: 30px;
+            line-height: 40px;
             position: absolute;
         }
         .bullet {
@@ -55,8 +55,8 @@
             margin-top: 10px;
         }
         #joystick-container {
-            width: 100px;
-            height: 100px;
+            width: 120px;
+            height: 120px;
             background: rgba(0, 0, 0, 0.1);
             border-radius: 50%;
             display: flex;
@@ -64,8 +64,8 @@
             justify-content: center;
         }
         #joystick {
-            width: 50px;
-            height: 50px;
+            width: 60px;
+            height: 60px;
             background-color: black;
             border-radius: 50%;
             position: relative;
@@ -74,7 +74,7 @@
         #shoot-button, #restart-button {
             margin-top: 10px;
             padding: 10px 20px;
-            font-size: 16px;
+            font-size: 18px;
             background-color: red;
             color: white;
             border: none;
@@ -86,7 +86,7 @@
             background-color: blue;
         }
         #score, #high-score {
-            font-size: 18px;
+            font-size: 20px;
             margin-top: 5px;
         }
     </style>
@@ -116,8 +116,8 @@
         const scoreDisplay = document.getElementById("score");
         const highScoreDisplay = document.getElementById("high-score");
 
-        let shipX = 110;
-        let shipY = 200;
+        let shipX = 180;
+        let shipY = 500;
         let score = 0;
         let highScore = localStorage.getItem("highScore") || 0;
         let gameRunning = true;
@@ -133,10 +133,10 @@
             if (!gameRunning) return;
             let touch = event.touches[0];
             let rect = joystickContainer.getBoundingClientRect();
-            let deltaX = touch.clientX - (rect.left + 50);
-            let deltaY = touch.clientY - (rect.top + 50);
+            let deltaX = touch.clientX - (rect.left + 60);
+            let deltaY = touch.clientY - (rect.top + 60);
             let distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-            let maxDistance = 40;
+            let maxDistance = 50;
 
             if (distance > maxDistance) {
                 deltaX = (deltaX / distance) * maxDistance;
@@ -145,8 +145,8 @@
 
             joystick.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
 
-            shipX = Math.max(0, Math.min(game.clientWidth - 30, shipX + deltaX * 0.2));
-            shipY = Math.max(0, Math.min(game.clientHeight - 30, shipY + deltaY * 0.2));
+            shipX = Math.max(0, Math.min(game.clientWidth - 40, shipX + deltaX * 0.2));
+            shipY = Math.max(0, Math.min(game.clientHeight - 40, shipY + deltaY * 0.2));
 
             updateShipPosition();
             event.preventDefault();
@@ -161,8 +161,8 @@
             let obstacle = document.createElement("div");
             obstacle.classList.add("obstacle");
             obstacle.innerHTML = "💥";
-            obstacle.style.left = `${Math.random() * (game.clientWidth - 30)}px`;
-            obstacle.style.top = "-30px";
+            obstacle.style.left = `${Math.random() * (game.clientWidth - 40)}px`;
+            obstacle.style.top = "-40px";
             game.appendChild(obstacle);
 
             let speed = Math.random() * 3 + 1;
@@ -173,7 +173,7 @@
                     game.removeChild(obstacle);
                     score++;
                     scoreDisplay.textContent = `Pontszám: ${score}`;
-                } else if (Math.abs(top - shipY) < 30 && Math.abs(parseInt(obstacle.style.left) - shipX) < 30) {
+                } else if (Math.abs(top - shipY) < 40 && Math.abs(parseInt(obstacle.style.left) - shipX) < 40) {
                     endGame();
                 } else {
                     obstacle.style.top = `${top + speed}px`;
@@ -187,7 +187,7 @@
             if (!gameRunning) return;
             let bullet = document.createElement("div");
             bullet.classList.add("bullet");
-            bullet.style.left = `${shipX + 12}px`;
+            bullet.style.left = `${shipX + 17}px`;
             bullet.style.top = `${shipY}px`;
             game.appendChild(bullet);
 
@@ -197,7 +197,7 @@
                 if (top < 0) {
                     game.removeChild(bullet);
                 } else {
-                    bullet.style.top = `${top - 5}px`;
+                    bullet.style.top = `${top - 7}px`;
                     requestAnimationFrame(moveBullet);
                 }
             }
@@ -216,8 +216,8 @@
 
         function restartGame() {
             game.innerHTML = '<div id="ship">🚀</div>';
-            shipX = 110;
-            shipY = 200;
+            shipX = 180;
+            shipY = 500;
             score = 0;
             scoreDisplay.textContent = "Pontszám: 0";
             gameRunning = true;
