@@ -2,199 +2,230 @@
 <html lang="hu">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Űrhajós Játék</title>
     <style>
         body {
             text-align: center;
             font-family: Arial, sans-serif;
+            background-color: white;
+            margin: 0;
         }
-        canvas {
-            background: lightgray;
-            display: block;
-            margin: 20px auto;
+        h1 {
+            margin: 10px 0;
+        }
+        #score, #highScore {
+            font-weight: bold;
+        }
+        #game-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        #game-area {
+            width: 90vw;
+            height: 60vh;
+            background-color: gray;
+            position: relative;
+            overflow: hidden;
             border: 2px solid black;
         }
-        .joystick-container {
-            position: relative;
-            width: 80px;
-            height: 80px;
-            margin: 20px auto;
-            background: lightgray;
+        #spaceship {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 30px;
+        }
+        .obstacle, .powerup {
+            position: absolute;
+            font-size: 25px;
+        }
+        #joystick-container {
+            position: absolute;
+            bottom: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 100px;
+            background: rgba(0, 0, 0, 0.1);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            touch-action: none;
         }
-        .joystick {
-            width: 40px;
-            height: 40px;
-            background: black;
+        #joystick {
+            width: 50px;
+            height: 50px;
+            background-color: black;
             border-radius: 50%;
+            cursor: grab;
         }
-        .button {
-            display: block;
-            margin: 10px auto;
+        #shoot-button {
+            position: absolute;
+            bottom: 60px;
+            right: 20px;
             padding: 10px;
-            font-size: 16px;
-            border: none;
+            font-size: 18px;
             cursor: pointer;
-        }
-        .shoot-button {
-            background: red;
-            color: white;
-        }
-        .reset-button {
-            background: lightblue;
         }
     </style>
 </head>
 <body>
-    <h2>Űrhajós Játék</h2>
+    <h1>Űrhajós Játék</h1>
     <p>Pontszám: <span id="score">0</span></p>
-    <p>Legtöbb elért pont: <span id="highscore">0</span></p>
-    <canvas id="gameCanvas" width="300" height="400"></canvas>
-    
-    <div class="joystick-container" id="joystickContainer">
-        <div class="joystick"></div>
+    <p>Legmagasabb pontszám: <span id="highScore">0</span></p>
+
+    <div id="game-container">
+        <div id="game-area">
+            <div id="spaceship">🚀</div>
+        </div>
     </div>
-    
-    <button class="button shoot-button" onclick="shootBullet()">Lövés</button>
-    <button class="button reset-button" onclick="resetGame()">Újraindítás</button>
+
+    <div id="joystick-container">
+        <div id="joystick"></div>
+    </div>
+
+    <button id="shoot-button">Lövés</button>
 
     <script>
-        const canvas = document.getElementById("gameCanvas");
-        const ctx = canvas.getContext("2d");
-        const scoreElement = document.getElementById("score");
-        const highscoreElement = document.getElementById("highscore");
-        const joystickContainer = document.getElementById("joystickContainer");
+        const gameArea = document.getElementById("game-area");
+        const spaceship = document.getElementById("spaceship");
+        const scoreDisplay = document.getElementById("score");
+        const highScoreDisplay = document.getElementById("highScore");
 
-        let spaceship = { x: 150, y: 350, size: 20, emoji: "🚀" };
-        let obstacles = [];
-        let powerups = [];
-        let bullets = [];
+        let spaceshipX = gameArea.clientWidth / 2 - 15;
         let score = 0;
-        let highscore = localStorage.getItem("highscore") || 0;
-        highscoreElement.innerText = highscore;
+        let highScore = localStorage.getItem("highScore") || 0;
+        highScoreDisplay.textContent = highScore;
 
-        function drawGame() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.font = "20px Arial";
-            ctx.fillText(spaceship.emoji, spaceship.x, spaceship.y);
-
-            obstacles.forEach(obstacle => {
-                ctx.fillText("🌑", obstacle.x, obstacle.y);
-            });
-
-            powerups.forEach(powerup => {
-                ctx.fillText("⭐", powerup.x, powerup.y);
-            });
-
-            bullets.forEach(bullet => {
-                ctx.fillText("💥", bullet.x, bullet.y);
-            });
+        function updateSpaceship() {
+            spaceship.style.left = `${spaceshipX}px`;
         }
 
-        function updateGame() {
-            obstacles.forEach(obstacle => obstacle.y += 2);
-            powerups.forEach(powerup => powerup.y += 2);
-            bullets.forEach(bullet => bullet.y -= 5);
+        function createObstacle() {
+            const obstacle = document.createElement("div");
+            obstacle.classList.add("obstacle");
+            obstacle.textContent = "💥";
+            obstacle.style.left = `${Math.random() * (gameArea.clientWidth - 30)}px`;
+            obstacle.style.top = "0px";
+            gameArea.appendChild(obstacle);
 
-            obstacles = obstacles.filter(obstacle => obstacle.y < canvas.height);
-            powerups = powerups.filter(powerup => powerup.y < canvas.height);
-            bullets = bullets.filter(bullet => bullet.y > 0);
-
-            checkCollisions();
-            drawGame();
-            requestAnimationFrame(updateGame);
+            let speed = Math.random() * 2 + 1;
+            function moveObstacle() {
+                let top = parseFloat(obstacle.style.top);
+                if (top < gameArea.clientHeight) {
+                    obstacle.style.top = `${top + speed}px`;
+                    requestAnimationFrame(moveObstacle);
+                } else {
+                    obstacle.remove();
+                }
+            }
+            moveObstacle();
         }
 
-        function spawnObstacle() {
-            obstacles.push({ x: Math.random() * (canvas.width - 20), y: 0 });
-        }
+        function createPowerup() {
+            const powerup = document.createElement("div");
+            powerup.classList.add("powerup");
+            powerup.textContent = "🔅";
+            powerup.style.left = `${Math.random() * (gameArea.clientWidth - 30)}px`;
+            powerup.style.top = "0px";
+            gameArea.appendChild(powerup);
 
-        function spawnPowerup() {
-            powerups.push({ x: Math.random() * (canvas.width - 20), y: 0 });
-        }
-
-        function shootBullet() {
-            bullets.push({ x: spaceship.x + spaceship.size / 2, y: spaceship.y });
+            function movePowerup() {
+                let top = parseFloat(powerup.style.top);
+                if (top < gameArea.clientHeight) {
+                    powerup.style.top = `${top + 2}px`;
+                    requestAnimationFrame(movePowerup);
+                } else {
+                    powerup.remove();
+                }
+            }
+            movePowerup();
         }
 
         function checkCollisions() {
-            obstacles.forEach((obstacle, index) => {
-                if (Math.abs(obstacle.x - spaceship.x) < 15 && Math.abs(obstacle.y - spaceship.y) < 15) {
+            document.querySelectorAll(".obstacle").forEach(obstacle => {
+                let obstacleRect = obstacle.getBoundingClientRect();
+                let spaceshipRect = spaceship.getBoundingClientRect();
+
+                if (
+                    obstacleRect.bottom >= spaceshipRect.top &&
+                    obstacleRect.top <= spaceshipRect.bottom &&
+                    obstacleRect.right >= spaceshipRect.left &&
+                    obstacleRect.left <= spaceshipRect.right
+                ) {
                     resetGame();
                 }
-                bullets.forEach((bullet, bulletIndex) => {
-                    if (Math.abs(bullet.x - obstacle.x) < 10 && Math.abs(bullet.y - obstacle.y) < 10) {
-                        obstacles.splice(index, 1);
-                        bullets.splice(bulletIndex, 1);
-                        score += 10;
-                        scoreElement.innerText = score;
-                    }
-                });
             });
 
-            powerups.forEach((powerup, index) => {
-                if (Math.abs(powerup.x - spaceship.x) < 15 && Math.abs(powerup.y - spaceship.y) < 15) {
-                    powerups.splice(index, 1);
-                    score += 20;
-                    scoreElement.innerText = score;
+            document.querySelectorAll(".powerup").forEach(powerup => {
+                let powerupRect = powerup.getBoundingClientRect();
+                let spaceshipRect = spaceship.getBoundingClientRect();
+
+                if (
+                    powerupRect.bottom >= spaceshipRect.top &&
+                    powerupRect.top <= spaceshipRect.bottom &&
+                    powerupRect.right >= spaceshipRect.left &&
+                    powerupRect.left <= spaceshipRect.right
+                ) {
+                    score += 1;
+                    scoreDisplay.textContent = score;
+                    powerup.remove();
                 }
             });
+
+            requestAnimationFrame(checkCollisions);
         }
 
         function resetGame() {
-            if (score > highscore) {
-                highscore = score;
-                localStorage.setItem("highscore", highscore);
-                highscoreElement.innerText = highscore;
+            alert("Vesztettél! Újraindul a játék.");
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem("highScore", highScore);
+                highScoreDisplay.textContent = highScore;
             }
             score = 0;
-            scoreElement.innerText = score;
-            obstacles = [];
-            powerups = [];
-            bullets = [];
-            spaceship.x = 150;
-            spaceship.y = 350;
+            scoreDisplay.textContent = score;
+            document.querySelectorAll(".obstacle, .powerup").forEach(e => e.remove());
         }
 
-        document.addEventListener("keydown", (event) => {
-            if (event.key === "ArrowLeft" && spaceship.x > 0) {
-                spaceship.x -= 20;
-            }
-            if (event.key === "ArrowRight" && spaceship.x < canvas.width - spaceship.size) {
-                spaceship.x += 20;
-            }
-        });
+        document.getElementById("shoot-button").addEventListener("click", () => {
+            const bullet = document.createElement("div");
+            bullet.textContent = "⚡";
+            bullet.style.position = "absolute";
+            bullet.style.left = `${spaceshipX + 10}px`;
+            bullet.style.bottom = "40px";
+            bullet.style.fontSize = "25px";
+            gameArea.appendChild(bullet);
 
-        // JOYSTICK MŰKÖDÉS
-        let joystickActive = false;
-
-        joystickContainer.addEventListener("touchstart", () => {
-            joystickActive = true;
-        });
-
-        joystickContainer.addEventListener("touchend", () => {
-            joystickActive = false;
-        });
-
-        joystickContainer.addEventListener("touchmove", (event) => {
-            if (joystickActive) {
-                const touchX = event.touches[0].clientX;
-                const canvasRect = canvas.getBoundingClientRect();
-                const relativeX = touchX - canvasRect.left;
-                if (relativeX > 0 && relativeX < canvas.width) {
-                    spaceship.x = relativeX;
+            function moveBullet() {
+                let bottom = parseFloat(bullet.style.bottom);
+                if (bottom < gameArea.clientHeight) {
+                    bullet.style.bottom = `${bottom + 5}px`;
+                    requestAnimationFrame(moveBullet);
+                } else {
+                    bullet.remove();
                 }
             }
+            moveBullet();
         });
 
-        setInterval(spawnObstacle, 2000);
-        setInterval(spawnPowerup, 5000);
-        updateGame();
+        document.getElementById("joystick").addEventListener("touchmove", (event) => {
+            let touch = event.touches[0];
+            let rect = gameArea.getBoundingClientRect();
+            let newX = touch.clientX - rect.left - 15;
+
+            if (newX >= 0 && newX <= gameArea.clientWidth - 30) {
+                spaceshipX = newX;
+                updateSpaceship();
+            }
+            event.preventDefault();
+        });
+
+        setInterval(createObstacle, 2000);
+        setInterval(createPowerup, 5000);
+        checkCollisions();
     </script>
 </body>
 </html>
