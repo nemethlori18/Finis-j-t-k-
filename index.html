@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lóri Űrhajós Játéka</title>
+    <title>Űrhajós Játék</title>
     <style>
         body {
             text-align: center;
@@ -109,23 +109,17 @@
 
         function drawObstacles() {
             ctx.font = "25px Arial";
-            obstacles.forEach(obstacle => {
-                ctx.fillText("💥", obstacle.x, obstacle.y);
-            });
+            obstacles.forEach(obstacle => ctx.fillText("💥", obstacle.x, obstacle.y));
         }
 
         function drawPowerups() {
             ctx.font = "25px Arial";
-            powerups.forEach(powerup => {
-                ctx.fillText("☀️", powerup.x, powerup.y);
-            });
+            powerups.forEach(powerup => ctx.fillText("☀️", powerup.x, powerup.y));
         }
 
         function drawBullets() {
             ctx.font = "25px Arial";
-            bullets.forEach(bullet => {
-                ctx.fillText("🔴", bullet.x, bullet.y);
-            });
+            bullets.forEach(bullet => ctx.fillText("🔴", bullet.x, bullet.y));
         }
 
         function updateGame() {
@@ -139,33 +133,50 @@
             powerups.forEach(powerup => powerup.y += 2);
             bullets.forEach(bullet => bullet.y -= 5);
 
-            bullets.forEach((bullet, bulletIndex) => {
-                obstacles.forEach((obstacle, obstacleIndex) => {
-                    if (bullet.x < obstacle.x + 20 && bullet.x + 15 > obstacle.x &&
-                        bullet.y < obstacle.y + 20 && bullet.y + 15 > obstacle.y) {
-                        obstacles.splice(obstacleIndex, 1);
-                        bullets.splice(bulletIndex, 1);
+            // Lövedékek és akadályok ütközése
+            bullets = bullets.filter((bullet) => {
+                let hit = false;
+                obstacles = obstacles.filter((obstacle) => {
+                    if (bullet.x < obstacle.x + 15 && bullet.x + 15 > obstacle.x &&
+                        bullet.y < obstacle.y + 15 && bullet.y + 15 > obstacle.y) {
                         score += 1;
                         document.getElementById("score").innerText = score;
+                        hit = true;
+                        return false; 
                     }
+                    return true;
                 });
+                return !hit;
             });
 
+            // Akadály és űrhajó ütközés
             obstacles.forEach(obstacle => {
-                if (spaceship.x < obstacle.x + 20 && spaceship.x + spaceship.width > obstacle.x &&
-                    spaceship.y < obstacle.y + 20 && spaceship.y + spaceship.height > obstacle.y) {
+                if (spaceship.x < obstacle.x + 15 && spaceship.x + spaceship.width > obstacle.x &&
+                    spaceship.y < obstacle.y + 15 && spaceship.y + spaceship.height > obstacle.y) {
                     gameOver();
                 }
             });
 
-            powerups.forEach((powerup, index) => {
-                if (spaceship.x < powerup.x + 20 && spaceship.x + spaceship.width > powerup.x &&
-                    spaceship.y < powerup.y + 20 && spaceship.y + spaceship.height > powerup.y) {
+            // Powerup felvétel
+            powerups = powerups.filter((powerup) => {
+                if (spaceship.x < powerup.x + 15 && spaceship.x + spaceship.width > powerup.x &&
+                    spaceship.y < powerup.y + 15 && spaceship.y + spaceship.height > powerup.y) {
                     score += 1;
                     document.getElementById("score").innerText = score;
-                    powerups.splice(index, 1);
+                    if (score > highscore) {
+                        highscore = score;
+                        localStorage.setItem("highscore", highscore);
+                        document.getElementById("highscore").innerText = highscore;
+                    }
+                    return false;
                 }
+                return true;
             });
+
+            // Memóriaszivárgás elkerülése
+            obstacles = obstacles.filter(obstacle => obstacle.y < canvas.height);
+            powerups = powerups.filter(powerup => powerup.y < canvas.height);
+            bullets = bullets.filter(bullet => bullet.y > 0);
 
             requestAnimationFrame(updateGame);
         }
@@ -205,36 +216,6 @@
         setInterval(spawnObstacle, 2000);
         setInterval(spawnPowerup, 5000);
         updateGame();
-
-        const joystick = document.querySelector(".joystick");
-        let isMoving = false;
-
-        joystick.addEventListener("touchstart", () => {
-            isMoving = true;
-        });
-
-        joystick.addEventListener("touchmove", (event) => {
-            if (isMoving) {
-                let touchX = event.touches[0].clientX - canvas.offsetLeft;
-                if (touchX > 0 && touchX < canvas.width) {
-                    spaceship.x = touchX - spaceship.width / 2;
-                }
-            }
-        });
-
-        joystick.addEventListener("touchend", () => {
-            isMoving = false;
-        });
-
-        document.addEventListener("keydown", (event) => {
-            if (event.key === "ArrowLeft" && spaceship.x > 0) {
-                spaceship.x -= 10;
-            }
-            if (event.key === "ArrowRight" && spaceship.x < canvas.width - spaceship.width) {
-                spaceship.x += 10;
-            }
-        });
-
     </script>
 
 </body>
