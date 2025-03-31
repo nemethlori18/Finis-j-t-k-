@@ -39,13 +39,6 @@
             position: absolute;
             transition: 0.05s;
         }
-        #shoot-button {
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-            padding: 10px;
-            font-size: 18px;
-        }
         #game-over {
             display: none;
             position: absolute;
@@ -70,15 +63,12 @@
 
     <h1>Űrhajós Játék</h1>
     <p>Pontszám: <span id="score">0</span></p>
-    <p>Legmagasabb pontszám: <span id="highscore">0</span></p>
 
     <canvas id="gameCanvas"></canvas>
 
     <div class="joystick-container" id="joystick-container">
         <div class="joystick" id="joystick"></div>
     </div>
-
-    <button id="shoot-button" onclick="shootBullet()">Lövés</button>
 
     <div id="game-over">
         <p>Meghaltál!</p>
@@ -100,18 +90,26 @@
         };
         let obstacles = [];
         let powerups = [];
-        let bullets = [];
         let score = 0;
-        let highscore = localStorage.getItem("highscore") || 0;
         let isGameOver = false;
         let joystickActive = false;
-        let joystickStartX, joystickStartY;
+        let joystickStartX, joystickCenterX;
 
-        document.getElementById("highscore").innerText = highscore;
+        document.getElementById("score").innerText = score;
 
         function drawSpaceship() {
             ctx.font = "25px Arial";
             ctx.fillText("🚀", spaceship.x, spaceship.y);
+        }
+
+        function drawObstacles() {
+            ctx.font = "25px Arial";
+            obstacles.forEach(obstacle => ctx.fillText("💥", obstacle.x, obstacle.y));
+        }
+
+        function drawPowerups() {
+            ctx.font = "25px Arial";
+            powerups.forEach(powerup => ctx.fillText("⭐", powerup.x, powerup.y));
         }
 
         function updateGame() {
@@ -119,10 +117,42 @@
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             drawSpaceship();
+            drawObstacles();
+            drawPowerups();
 
-            obstacles.forEach(obstacle => obstacle.y += 2);
+            obstacles.forEach(obstacle => obstacle.y += 3);
             powerups.forEach(powerup => powerup.y += 2);
-            bullets.forEach(bullet => bullet.y -= 5);
+
+            // Ütközés vizsgálata akadályokkal
+            obstacles.forEach(obstacle => {
+                if (
+                    spaceship.x < obstacle.x + 30 &&
+                    spaceship.x + spaceship.width > obstacle.x &&
+                    spaceship.y < obstacle.y + 30 &&
+                    spaceship.y + spaceship.height > obstacle.y
+                ) {
+                    gameOver();
+                }
+            });
+
+            // Powerup felvétele
+            powerups = powerups.filter(powerup => {
+                if (
+                    spaceship.x < powerup.x + 30 &&
+                    spaceship.x + spaceship.width > powerup.x &&
+                    spaceship.y < powerup.y + 30 &&
+                    spaceship.y + spaceship.height > powerup.y
+                ) {
+                    score += 1;
+                    document.getElementById("score").innerText = score;
+                    return false;
+                }
+                return true;
+            });
+
+            // Tisztítás a képernyőn kívüli elemekhez
+            obstacles = obstacles.filter(obstacle => obstacle.y < canvas.height);
+            powerups = powerups.filter(powerup => powerup.y < canvas.height);
 
             requestAnimationFrame(updateGame);
         }
@@ -135,49 +165,53 @@
         function restartGame() {
             document.getElementById("game-over").style.display = "none";
             isGameOver = false;
-            
-            if (score > highscore) {
-                highscore = score;
-                localStorage.setItem("highscore", highscore);
-                document.getElementById("highscore").innerText = highscore;
-            }
-            
             score = 0;
             document.getElementById("score").innerText = score;
             spaceship.x = canvas.width / 2 - 20;
-            spaceship.y = canvas.height - 60;
             obstacles = [];
             powerups = [];
-            bullets = [];
-
             updateGame();
         }
 
-        function shootBullet() {
-            bullets.push({ x: spaceship.x + spaceship.width / 2 - 7, y: spaceship.y });
+        function spawnObstacle() {
+            obstacles.push({ x: Math.random() * (canvas.width - 30), y: 0 });
         }
+
+        function spawnPowerup() {
+            powerups.push({ x: Math.random() * (canvas.width - 30), y: 0 });
+        }
+
+        setInterval(spawnObstacle, 2000);
+        setInterval(spawnPowerup, 5000);
+        updateGame();
 
         function handleJoystickStart(event) {
             joystickActive = true;
             const touch = event.touches[0];
+
+            const rect = joystickContainer.getBoundingClientRect();
+            joystickCenterX = rect.left + rect.width / 2;
             joystickStartX = touch.clientX;
-            joystickStartY = touch.clientY;
         }
 
         function handleJoystickMove(event) {
             if (!joystickActive) return;
             const touch = event.touches[0];
-            let deltaX = touch.clientX - joystickStartX;
-            let deltaY = touch.clientY - joystickStartY;
+            let deltaX = touch.clientX - joystickCenterX;
 
-            let sensitivity = 0.1;
+            let maxDistance = 40;
+            let distance = Math.abs(deltaX);
+
+            if (distance > maxDistance) {
+                deltaX = (deltaX / distance) * maxDistance;
+            }
+
+            let sensitivity = 0.3;
             spaceship.x += deltaX * sensitivity;
-            spaceship.y += deltaY * sensitivity;
 
             spaceship.x = Math.max(0, Math.min(canvas.width - spaceship.width, spaceship.x));
-            spaceship.y = Math.max(0, Math.min(canvas.height - spaceship.height, spaceship.y));
 
-            joystick.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+            joystick.style.transform = `translate(${deltaX}px, 0px)`;
         }
 
         function handleJoystickEnd() {
@@ -191,8 +225,6 @@
         joystickContainer.addEventListener("touchstart", handleJoystickStart);
         joystickContainer.addEventListener("touchmove", handleJoystickMove);
         joystickContainer.addEventListener("touchend", handleJoystickEnd);
-
-        updateGame();
     </script>
 
 </body>
