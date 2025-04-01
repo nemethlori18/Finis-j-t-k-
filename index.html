@@ -20,8 +20,6 @@
     .joystick-container {
       position: fixed;
       bottom: 10px;
-      left: 50%;
-      transform: translateX(-50%);
       width: 100px;
       height: 100px;
       background-color: lightgray;
@@ -29,6 +27,8 @@
       display: none;
       align-items: center;
       justify-content: center;
+      transform: translateX(-50%);
+      z-index: 30;
     }
     .joystick {
       width: 40px;
@@ -118,12 +118,10 @@
 
 <div id="game-over">
   <p>Meghaltál! Mert egy csicska vagy.</p>
-
   <div id="leaderboard">
     <h3>Eredménylista</h3>
     <ul id="leaderboard-list"></ul>
   </div>
-
   <button id="restart-button" onclick="restartGame()">Újraindítás</button><br/>
   <button id="reset-leaderboard-button" onclick="resetLeaderboard()">Eredménylista törlése</button>
 </div>
@@ -182,15 +180,15 @@
     powerups.forEach(p => p.y += 2);
 
     obstacles.forEach(o => {
-      if (spaceship.x < o.x + 25 && spaceship.x + spaceship.width > o.x &&
-          spaceship.y < o.y + 25 && spaceship.y + spaceship.height > o.y) {
+      if (spaceship.x < o.x + 20 && spaceship.x + spaceship.width > o.x &&
+          spaceship.y < o.y + 20 && spaceship.y + spaceship.height > o.y) {
         gameOver();
       }
     });
 
     powerups = powerups.filter(p => {
-      if (spaceship.x < p.x + 25 && spaceship.x + spaceship.width > p.x &&
-          spaceship.y < p.y + 25 && spaceship.y + spaceship.height > p.y) {
+      if (spaceship.x < p.x + 20 && spaceship.x + spaceship.width > p.x &&
+          spaceship.y < p.y + 20 && spaceship.y + spaceship.height > p.y) {
         score += 1;
         document.getElementById("score").innerText = score;
         if (score > highscore) {
@@ -269,18 +267,23 @@
   }
 
   setInterval(spawnObstacle, 800);
-  setInterval(spawnPowerup, 1500);
+  setInterval(spawnPowerup, 1200);
 
   const joystick = document.getElementById("joystick");
   const joystickContainer = document.getElementById("joystick-container");
 
-  joystickContainer.addEventListener("touchstart", (event) => {
-    joystickContainer.style.left = `${event.touches[0].clientX}px`;
-    joystickCenterX = event.touches[0].clientX;
+  let joystickCenterX = 0;
+
+  window.addEventListener("touchstart", (event) => {
+    if (event.target.closest("#joystick-container")) return;
+    const touch = event.touches[0];
+    joystickContainer.style.left = `${touch.clientX}px`;
+    joystickContainer.style.bottom = "10px";
     joystickContainer.style.display = "flex";
+    joystickCenterX = touch.clientX;
   });
 
-  joystickContainer.addEventListener("touchmove", (event) => {
+  window.addEventListener("touchmove", (event) => {
     const touchX = event.touches[0].clientX;
     let deltaX = touchX - joystickCenterX;
     const maxDistance = 40;
@@ -292,7 +295,7 @@
     joystick.style.transform = `translate(${deltaX}px, 0px)`;
   });
 
-  joystickContainer.addEventListener("touchend", () => {
+  window.addEventListener("touchend", () => {
     joystick.style.transform = `translate(0px, 0px)`;
     joystickContainer.style.display = "none";
   });
