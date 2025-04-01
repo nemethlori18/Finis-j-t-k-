@@ -153,7 +153,18 @@
     }
 
     if (controlMode === "tilt") {
-      window.addEventListener("deviceorientation", handleTilt);
+      // iOS esetén engedélykérés
+      if (typeof DeviceMotionEvent !== "undefined" && typeof DeviceMotionEvent.requestPermission === "function") {
+        DeviceMotionEvent.requestPermission().then(response => {
+          if (response === "granted") {
+            window.addEventListener("deviceorientation", handleTilt);
+          } else {
+            alert("A dönthető irányításhoz engedély szükséges!");
+          }
+        }).catch(console.error);
+      } else {
+        window.addEventListener("deviceorientation", handleTilt);
+      }
     }
 
     updateLeaderboardDisplay();
@@ -242,7 +253,6 @@
     isGameOver = true;
     document.getElementById("game-over").style.display = "block";
 
-    // új: csak akkor frissítjük a rekordot, ha az új pont magasabb
     const existing = leaderboard.find(entry => entry.name === playerName);
     if (existing) {
       if (score > existing.score) {
