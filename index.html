@@ -218,7 +218,13 @@
   function gameOver() {
     isGameOver = true;
     document.getElementById("game-over").style.display = "block";
+    // Töröljük a meglévő bejegyzést ugyanazzal a névvel
+    leaderboard = leaderboard.filter(entry => entry.name !== playerName);
+
+    // Hozzáadjuk az újat
     leaderboard.push({ name: playerName, score });
+
+    // Rendezés és limitálás
     leaderboard.sort((a, b) => b.score - a.score);
     leaderboard = leaderboard.slice(0, 5);
     localStorage.setItem("leaderboard", JSON.stringify(leaderboard));
@@ -271,7 +277,7 @@
   }
 
   setInterval(spawnObstacle, 2000);
-  setInterval(spawnPowerup, 5000);
+  setInterval(spawnPowerup, 2500);
 
   function handleJoystickStart(event) {
     joystickActive = true;
