@@ -45,11 +45,12 @@
       top: 30%;
       left: 50%;
       transform: translate(-50%, -50%);
-      background: rgba(0, 0, 0, 0.8);
+      background: rgba(0, 0, 0, 0.9);
       color: white;
       padding: 20px;
       font-size: 24px;
       border-radius: 10px;
+      z-index: 20;
     }
     #restart-button, #reset-leaderboard-button {
       margin-top: 10px;
@@ -84,9 +85,8 @@
     #leaderboard {
       margin-top: 20px;
       color: white;
-      background: rgba(0, 0, 0, 0.6);
+      background: rgba(255, 255, 255, 0.1);
       padding: 10px;
-      display: none;
       border-radius: 10px;
     }
     #leaderboard h3 {
@@ -111,11 +111,6 @@
 <p>Pontszám: <span id="score">0</span></p>
 <p>Legmagasabb pontszám: <span id="highscore">0</span> (<span id="highscore-name">-</span>)</p>
 
-<div id="leaderboard">
-  <h3>Eredménylista</h3>
-  <ul id="leaderboard-list"></ul>
-</div>
-
 <canvas id="gameCanvas"></canvas>
 
 <div class="joystick-container" id="joystick-container">
@@ -124,6 +119,12 @@
 
 <div id="game-over">
   <p>Meghaltál! Mert egy csicska vagy.</p>
+
+  <div id="leaderboard">
+    <h3>Eredménylista</h3>
+    <ul id="leaderboard-list"></ul>
+  </div>
+
   <button id="restart-button" onclick="restartGame()">Újraindítás</button><br/>
   <button id="reset-leaderboard-button" onclick="resetLeaderboard()">Eredménylista törlése</button>
 </div>
@@ -217,7 +218,6 @@
   function gameOver() {
     isGameOver = true;
     document.getElementById("game-over").style.display = "block";
-    document.getElementById("leaderboard").style.display = "inline-block";
 
     leaderboard.push({ name: playerName, score });
     leaderboard.sort((a, b) => b.score - a.score);
@@ -250,7 +250,6 @@
 
   function restartGame() {
     document.getElementById("game-over").style.display = "none";
-    document.getElementById("leaderboard").style.display = "none";
     isGameOver = false;
     score = 0;
     document.getElementById("score").innerText = score;
