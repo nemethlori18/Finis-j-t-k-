@@ -185,7 +185,6 @@
     obstacles.forEach(o => o.y += 3);
     powerups.forEach(p => p.y += 2);
 
-    // pontosabb hitbox méret: 25x25 pixel
     obstacles.forEach(o => {
       if (spaceship.x < o.x + 25 && spaceship.x + spaceship.width > o.x &&
           spaceship.y < o.y + 25 && spaceship.y + spaceship.height > o.y) {
@@ -242,8 +241,17 @@
   function gameOver() {
     isGameOver = true;
     document.getElementById("game-over").style.display = "block";
-    leaderboard = leaderboard.filter(entry => entry.name !== playerName);
-    leaderboard.push({ name: playerName, score });
+
+    // új: csak akkor frissítjük a rekordot, ha az új pont magasabb
+    const existing = leaderboard.find(entry => entry.name === playerName);
+    if (existing) {
+      if (score > existing.score) {
+        existing.score = score;
+      }
+    } else {
+      leaderboard.push({ name: playerName, score });
+    }
+
     leaderboard.sort((a, b) => b.score - a.score);
     leaderboard = leaderboard.slice(0, 5);
     localStorage.setItem("leaderboard", JSON.stringify(leaderboard));
