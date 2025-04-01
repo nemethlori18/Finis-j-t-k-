@@ -86,14 +86,15 @@
       margin: 0;
     }
     #active-powerups {
-      position: absolute;
-      top: 5px;
-      left: 50%;
-      transform: translateX(-50%);
-      display: flex;
-      gap: 10px;
-      font-size: 22px;
-      z-index: 15;
+      position: fixed;
+      top: 0;
+      right: 0;
+      padding: 10px;
+      background: rgba(0, 0, 0, 0.4);
+      color: white;
+      font-size: 20px;
+      text-align: right;
+      z-index: 30;
     }
   </style>
 </head>
@@ -113,12 +114,12 @@
 <p>Pontszám: <span id="score">0</span></p>
 <p>Legmagasabb pontszám: <span id="highscore">0</span> (<span id="highscore-name">-</span>)</p>
 
-<div id="active-powerups"></div>
-
 <canvas id="gameCanvas"></canvas>
 
 <div class="touch-zone touch-left" id="leftZone" style="display: none;"></div>
 <div class="touch-zone touch-right" id="rightZone" style="display: none;"></div>
+
+<div id="active-powerups"></div>
 
 <div id="game-over">
   <p>Meghaltál!</p>
@@ -131,243 +132,242 @@
 </div>
 
 <script>
-  const canvas = document.getElementById("gameCanvas");
-  const ctx = canvas.getContext("2d");
-  canvas.width = window.innerWidth * 0.85;
-  canvas.height = window.innerHeight * 0.55;
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+canvas.width = window.innerWidth * 0.85;
+canvas.height = window.innerHeight * 0.55;
 
-  let spaceship = { x: canvas.width / 2 - 20, y: canvas.height - 60, width: 40, height: 40 };
-  let obstacles = [], powerups = [];
-  let score = 0;
-  let highscore = localStorage.getItem("highscore") || 0;
-  let highscoreName = localStorage.getItem("highscoreName") || "-";
-  let leaderboard = JSON.parse(localStorage.getItem("leaderboard") || "[]");
-  let isGameOver = false;
-  let playerName = "";
-  let controlMode = "touch";
-  let moveLeft = false, moveRight = false;
+let spaceship = { x: canvas.width / 2 - 20, y: canvas.height - 60, width: 40, height: 40 };
+let obstacles = [], powerups = [], activePowerups = {};
+let score = 0;
+let highscore = localStorage.getItem("highscore") || 0;
+let highscoreName = localStorage.getItem("highscoreName") || "-";
+let leaderboard = JSON.parse(localStorage.getItem("leaderboard") || "[]");
+let isGameOver = false;
+let playerName = "";
+let controlMode = "touch";
+let moveLeft = false, moveRight = false;
 
-  let activePowerups = [];
+document.getElementById("score").innerText = score;
+document.getElementById("highscore").innerText = highscore;
+document.getElementById("highscore-name").innerText = highscoreName;
 
-  const activePowerupsDisplay = document.getElementById("active-powerups");
+function startGame() {
+  const nameInput = document.getElementById("playerNameInput");
+  const controlSelect = document.getElementById("controlMode");
+  if (nameInput.value.trim() === "") return;
+  playerName = nameInput.value.trim();
+  controlMode = controlSelect.value;
+  document.getElementById("name-input-screen").style.display = "none";
 
-  document.getElementById("score").innerText = score;
-  document.getElementById("highscore").innerText = highscore;
-  document.getElementById("highscore-name").innerText = highscoreName;
-
-  function startGame() {
-    const nameInput = document.getElementById("playerNameInput");
-    const controlSelect = document.getElementById("controlMode");
-    if (nameInput.value.trim() === "") return;
-    playerName = nameInput.value.trim();
-    controlMode = controlSelect.value;
-    document.getElementById("name-input-screen").style.display = "none";
-
-    if (controlMode === "touch") {
-      document.getElementById("leftZone").style.display = "block";
-      document.getElementById("rightZone").style.display = "block";
-    }
-
-    if (controlMode === "tilt") {
-      if (typeof DeviceMotionEvent !== "undefined" && typeof DeviceMotionEvent.requestPermission === "function") {
-        DeviceMotionEvent.requestPermission().then(response => {
-          if (response === "granted") {
-            window.addEventListener("deviceorientation", handleTilt);
-          } else {
-            alert("A dönthető irányításhoz engedély szükséges!");
-          }
-        }).catch(console.error);
-      } else {
-        window.addEventListener("deviceorientation", handleTilt);
-      }
-    }
-
-    updateLeaderboardDisplay();
-    updateGame();
+  if (controlMode === "touch") {
+    document.getElementById("leftZone").style.display = "block";
+    document.getElementById("rightZone").style.display = "block";
   }
 
-  function drawSpaceship() {
-    ctx.font = "25px Arial";
-    ctx.fillText("🚀", spaceship.x, spaceship.y);
-  }
-
-  function drawObstacles() {
-    ctx.font = "25px Arial";
-    obstacles.forEach(o => ctx.fillText("💥", o.x, o.y));
-  }
-
-  function drawPowerups() {
-    ctx.font = "25px Arial";
-    powerups.forEach(p => ctx.fillText(p.emoji, p.x, p.y));
-  }
-
-  function updateActivePowerupsDisplay() {
-    activePowerupsDisplay.innerHTML = '';
-    activePowerups.forEach(p => {
-      const span = document.createElement("span");
-      const remaining = Math.ceil((p.end - Date.now()) / 1000);
-      span.textContent = `${p.emoji} ${remaining}s`;
-      activePowerupsDisplay.appendChild(span);
-    });
-    activePowerups = activePowerups.filter(p => Date.now() < p.end);
-  }
-
-  function updateGame() {
-    if (isGameOver) return;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawSpaceship();
-    drawObstacles();
-    drawPowerups();
-    updateActivePowerupsDisplay();
-
-    const isInvincible = activePowerups.some(p => p.type === "shield");
-    const speedBoost = activePowerups.some(p => p.type === "boost");
-    const obstacleSlowdown = activePowerups.some(p => p.type === "slow");
-
-    const obstacleSpeed = obstacleSlowdown ? 1.5 : 3;
-    obstacles.forEach(o => o.y += obstacleSpeed);
-    powerups.forEach(p => p.y += 2);
-
-    obstacles.forEach(o => {
-      if (!isInvincible &&
-          spaceship.x < o.x + 25 && spaceship.x + spaceship.width > o.x &&
-          spaceship.y < o.y + 25 && spaceship.y + spaceship.height > o.y) {
-        gameOver();
-      }
-    });
-
-    powerups = powerups.filter(p => {
-      const hit = spaceship.x < p.x + 25 && spaceship.x + spaceship.width > p.x &&
-                  spaceship.y < p.y + 25 && spaceship.y + spaceship.height > p.y;
-      if (hit) {
-        if (p.type === "score") {
-          score += 1;
-        } else if (p.type === "extra") {
-          score += 3;
+  if (controlMode === "tilt") {
+    if (typeof DeviceMotionEvent !== "undefined" && typeof DeviceMotionEvent.requestPermission === "function") {
+      DeviceMotionEvent.requestPermission().then(response => {
+        if (response === "granted") {
+          window.addEventListener("deviceorientation", handleTilt);
         } else {
-          activePowerups.push({ type: p.type, emoji: p.emoji, end: Date.now() + 5000 });
+          alert("A dönthető irányításhoz engedély szükséges!");
         }
-        document.getElementById("score").innerText = score;
-        if (score > highscore) {
-          highscore = score;
-          highscoreName = playerName;
-          localStorage.setItem("highscore", highscore);
-          localStorage.setItem("highscoreName", highscoreName);
-          document.getElementById("highscore").innerText = highscore;
-          document.getElementById("highscore-name").innerText = highscoreName;
-        }
-        return false;
-      }
-      return true;
-    });
-
-    obstacles = obstacles.filter(o => o.y < canvas.height);
-    powerups = powerups.filter(p => p.y < canvas.height);
-
-    requestAnimationFrame(updateGame);
+      }).catch(console.error);
+    } else {
+      window.addEventListener("deviceorientation", handleTilt);
+    }
   }
 
-  function handleTilt(event) {
-    const gamma = event.gamma;
-    const speedBoost = activePowerups.some(p => p.type === "boost");
-    let step = speedBoost ? 6 : 3;
-    if (gamma > 5) spaceship.x += step;
-    if (gamma < -5) spaceship.x -= step;
+  updateLeaderboardDisplay();
+  updateGame();
+}
+
+function drawSpaceship() {
+  ctx.font = "25px Arial";
+  ctx.fillText("🚀", spaceship.x, spaceship.y);
+}
+
+function drawObstacles() {
+  ctx.font = "25px Arial";
+  obstacles.forEach(o => ctx.fillText("💥", o.x, o.y));
+}
+
+function drawPowerups() {
+  ctx.font = "25px Arial";
+  powerups.forEach(p => ctx.fillText(p.emoji, p.x, p.y));
+}
+
+function updateGame() {
+  if (isGameOver) return;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawSpaceship();
+  drawObstacles();
+  drawPowerups();
+
+  let obstacleSpeed = activePowerups["🐢"] ? 1.5 : 3;
+  let speed = activePowerups["⚡"] ? 6 : 3;
+
+  obstacles.forEach(o => o.y += obstacleSpeed);
+  powerups.forEach(p => p.y += 2);
+
+  obstacles.forEach(o => {
+    if (!activePowerups["🛡️"] &&
+        spaceship.x < o.x + 25 && spaceship.x + spaceship.width > o.x &&
+        spaceship.y < o.y + 25 && spaceship.y + spaceship.height > o.y) {
+      gameOver();
+    }
+  });
+
+  powerups = powerups.filter(p => {
+    const hit = spaceship.x < p.x + 25 && spaceship.x + spaceship.width > p.x &&
+                spaceship.y < p.y + 25 && spaceship.y + spaceship.height > p.y;
+    if (hit) {
+      if (p.type === "score") score += 1;
+      if (p.type === "extra") score += 3;
+      if (["🛡️", "⚡", "🐢"].includes(p.emoji)) activatePowerup(p.emoji, 5000);
+
+      document.getElementById("score").innerText = score;
+      if (score > highscore) {
+        highscore = score;
+        highscoreName = playerName;
+        localStorage.setItem("highscore", highscore);
+        localStorage.setItem("highscoreName", highscoreName);
+        document.getElementById("highscore").innerText = highscore;
+        document.getElementById("highscore-name").innerText = highscoreName;
+      }
+      return false;
+    }
+    return true;
+  });
+
+  obstacles = obstacles.filter(o => o.y < canvas.height);
+  powerups = powerups.filter(p => p.y < canvas.height);
+
+  updatePowerupDisplay();
+  requestAnimationFrame(updateGame);
+}
+
+function activatePowerup(emoji, duration) {
+  activePowerups[emoji] = Math.ceil(duration / 1000);
+  const interval = setInterval(() => {
+    activePowerups[emoji]--;
+    if (activePowerups[emoji] <= 0) {
+      clearInterval(interval);
+      delete activePowerups[emoji];
+    }
+  }, 1000);
+}
+
+function updatePowerupDisplay() {
+  const container = document.getElementById("active-powerups");
+  container.innerHTML = "";
+  for (let emoji in activePowerups) {
+    container.innerHTML += `${emoji} ${activePowerups[emoji]}s<br>`;
+  }
+}
+
+function handleTilt(event) {
+  const gamma = event.gamma;
+  let step = activePowerups["⚡"] ? 6 : 3;
+  if (gamma > 5) spaceship.x += step;
+  if (gamma < -5) spaceship.x -= step;
+  spaceship.x = Math.max(0, Math.min(canvas.width - spaceship.width, spaceship.x));
+}
+
+document.getElementById("leftZone").addEventListener("touchstart", () => moveLeft = true);
+document.getElementById("leftZone").addEventListener("touchend", () => moveLeft = false);
+document.getElementById("rightZone").addEventListener("touchstart", () => moveRight = true);
+document.getElementById("rightZone").addEventListener("touchend", () => moveRight = false);
+
+function moveLoop() {
+  if (!isGameOver && controlMode === "touch") {
+    let step = activePowerups["⚡"] ? 6 : 3;
+    if (moveLeft) spaceship.x -= step;
+    if (moveRight) spaceship.x += step;
     spaceship.x = Math.max(0, Math.min(canvas.width - spaceship.width, spaceship.x));
   }
+  requestAnimationFrame(moveLoop);
+}
+moveLoop();
 
-  document.getElementById("leftZone").addEventListener("touchstart", () => moveLeft = true);
-  document.getElementById("leftZone").addEventListener("touchend", () => moveLeft = false);
-  document.getElementById("rightZone").addEventListener("touchstart", () => moveRight = true);
-  document.getElementById("rightZone").addEventListener("touchend", () => moveRight = false);
+function gameOver() {
+  isGameOver = true;
+  document.getElementById("game-over").style.display = "block";
 
-  function moveLoop() {
-    if (!isGameOver && controlMode === "touch") {
-      const speedBoost = activePowerups.some(p => p.type === "boost");
-      let step = speedBoost ? 6 : 3;
-      if (moveLeft) spaceship.x -= step;
-      if (moveRight) spaceship.x += step;
-      spaceship.x = Math.max(0, Math.min(canvas.width - spaceship.width, spaceship.x));
+  const existing = leaderboard.find(entry => entry.name === playerName);
+  if (existing) {
+    if (score > existing.score) {
+      existing.score = score;
     }
-    requestAnimationFrame(moveLoop);
+  } else {
+    leaderboard.push({ name: playerName, score });
   }
-  moveLoop();
 
-  function gameOver() {
-    isGameOver = true;
-    document.getElementById("game-over").style.display = "block";
+  leaderboard.sort((a, b) => b.score - a.score);
+  leaderboard = leaderboard.slice(0, 5);
+  localStorage.setItem("leaderboard", JSON.stringify(leaderboard));
+  updateLeaderboardDisplay();
+}
 
-    const existing = leaderboard.find(entry => entry.name === playerName);
-    if (existing) {
-      if (score > existing.score) {
-        existing.score = score;
-      }
-    } else {
-      leaderboard.push({ name: playerName, score });
-    }
+function updateLeaderboardDisplay() {
+  const list = document.getElementById("leaderboard-list");
+  list.innerHTML = "";
+  leaderboard.forEach(entry => {
+    const li = document.createElement("li");
+    li.innerText = `${entry.name}: ${entry.score} pont`;
+    list.appendChild(li);
+  });
+}
 
-    leaderboard.sort((a, b) => b.score - a.score);
-    leaderboard = leaderboard.slice(0, 5);
-    localStorage.setItem("leaderboard", JSON.stringify(leaderboard));
+function resetLeaderboard() {
+  const pass = prompt("Írd be a jelszót az eredménylista és a highscore törléséhez:");
+  if (pass === "reset") {
+    leaderboard = [];
+    localStorage.removeItem("leaderboard");
+    localStorage.removeItem("highscore");
+    localStorage.removeItem("highscoreName");
+    document.getElementById("highscore").innerText = "0";
+    document.getElementById("highscore-name").innerText = "-";
     updateLeaderboardDisplay();
+    alert("Eredménylista és highscore törölve.");
+  } else {
+    alert("Hibás jelszó!");
   }
+}
 
-  function updateLeaderboardDisplay() {
-    const list = document.getElementById("leaderboard-list");
-    list.innerHTML = "";
-    leaderboard.forEach(entry => {
-      const li = document.createElement("li");
-      li.innerText = `${entry.name}: ${entry.score} pont`;
-      list.appendChild(li);
-    });
-  }
+function restartGame() {
+  document.getElementById("game-over").style.display = "none";
+  isGameOver = false;
+  score = 0;
+  document.getElementById("score").innerText = score;
+  spaceship.x = canvas.width / 2 - 20;
+  obstacles = [];
+  powerups = [];
+  activePowerups = {};
+  updateGame();
+}
 
-  function resetLeaderboard() {
-    const pass = prompt("Írd be a jelszót az eredménylista és a highscore törléséhez:");
-    if (pass === "reset") {
-      leaderboard = [];
-      localStorage.removeItem("leaderboard");
-      localStorage.removeItem("highscore");
-      localStorage.removeItem("highscoreName");
-      document.getElementById("highscore").innerText = "0";
-      document.getElementById("highscore-name").innerText = "-";
-      updateLeaderboardDisplay();
-      alert("Eredménylista és highscore törölve.");
-    } else {
-      alert("Hibás jelszó!");
-    }
-  }
+function spawnObstacle() {
+  obstacles.push({ x: Math.random() * (canvas.width - 30), y: 0 });
+}
 
-  function restartGame() {
-    document.getElementById("game-over").style.display = "none";
-    isGameOver = false;
-    score = 0;
-    activePowerups = [];
-    document.getElementById("score").innerText = score;
-    spaceship.x = canvas.width / 2 - 20;
-    obstacles = [];
-    powerups = [];
-    updateGame();
-  }
+function spawnPowerup(type, emoji) {
+  powerups.push({ type, emoji, x: Math.random() * (canvas.width - 30), y: 0 });
+}
 
-  function spawnObstacle() {
-    obstacles.push({ x: Math.random() * (canvas.width - 30), y: 0 });
-  }
-
-  function spawnPowerup() {
-    const types = [
-      { type: "score", emoji: "⭐" },
-      { type: "extra", emoji: "🎁" },
-      { type: "shield", emoji: "🛡️" },
-      { type: "boost", emoji: "⚡" },
-      { type: "slow", emoji: "🐢" },
-    ];
-    const chosen = types[Math.floor(Math.random() * types.length)];
-    powerups.push({ ...chosen, x: Math.random() * (canvas.width - 30), y: 0 });
-  }
-
-  setInterval(spawnObstacle, 800);
-  setInterval(spawnPowerup, 2000);
+setInterval(spawnObstacle, 800);
+setInterval(() => spawnPowerup("score", "⭐"), 1000);
+setInterval(() => {
+  const types = [
+    { type: "extra", emoji: "🎁" },
+    { type: "shield", emoji: "🛡️" },
+    { type: "boost", emoji: "⚡" },
+    { type: "slow", emoji: "🐢" }
+  ];
+  const p = types[Math.floor(Math.random() * types.length)];
+  spawnPowerup(p.type, p.emoji);
+}, 2000);
 </script>
 
 </body>
