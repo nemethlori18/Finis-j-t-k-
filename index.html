@@ -153,7 +153,18 @@
     }
 
     if (controlMode === "tilt") {
-      window.addEventListener("deviceorientation", handleTilt);
+      if (typeof DeviceOrientationEvent !== "undefined" &&
+          typeof DeviceOrientationEvent.requestPermission === "function") {
+        DeviceOrientationEvent.requestPermission().then(permissionState => {
+          if (permissionState === "granted") {
+            window.addEventListener("deviceorientation", handleTilt);
+          } else {
+            alert("A dönthető irányításhoz engedély szükséges.");
+          }
+        }).catch(console.error);
+      } else {
+        window.addEventListener("deviceorientation", handleTilt);
+      }
     }
 
     updateLeaderboardDisplay();
@@ -217,7 +228,7 @@
   }
 
   function handleTilt(event) {
-    const gamma = event.gamma; // -90 és 90 között
+    const gamma = event.gamma;
     if (gamma > 5) spaceship.x += 3;
     if (gamma < -5) spaceship.x -= 3;
     spaceship.x = Math.max(0, Math.min(canvas.width - spaceship.width, spaceship.x));
