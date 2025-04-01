@@ -1,244 +1,267 @@
 <!DOCTYPE html>
 <html lang="hu">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Űrhajós Játék</title>
-    <style>
-        body {
-            text-align: center;
-            font-family: Arial, sans-serif;
-            overflow: hidden;
-            margin: 0;
-        }
-        canvas {
-            background-color: gray;
-            display: block;
-            margin: auto;
-            border: 2px solid black;
-        }
-        .joystick-container {
-            position: absolute;
-            bottom: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 100px;
-            height: 100px;
-            background-color: lightgray;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: fixed;
-        }
-        .joystick {
-            width: 40px;
-            height: 40px;
-            background-color: black;
-            border-radius: 50%;
-            position: absolute;
-            transition: 0.05s;
-        }
-        #game-over {
-            display: none;
-            position: absolute;
-            top: 40%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 20px;
-            font-size: 24px;
-            border-radius: 10px;
-        }
-        #restart-button {
-            margin-top: 10px;
-            padding: 10px;
-            font-size: 18px;
-            cursor: pointer;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Űrhajós Játék</title>
+  <style>
+    body {
+      text-align: center;
+      font-family: Arial, sans-serif;
+      overflow: hidden;
+      margin: 0;
+    }
+    canvas {
+      background-color: gray;
+      display: block;
+      margin: auto;
+      border: 2px solid black;
+    }
+    .joystick-container {
+      position: absolute;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100px;
+      height: 100px;
+      background-color: lightgray;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: fixed;
+    }
+    .joystick {
+      width: 40px;
+      height: 40px;
+      background-color: black;
+      border-radius: 50%;
+      position: absolute;
+      transition: 0.05s;
+    }
+    #game-over {
+      display: none;
+      position: absolute;
+      top: 40%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 20px;
+      font-size: 24px;
+      border-radius: 10px;
+    }
+    #restart-button {
+      margin-top: 10px;
+      padding: 10px;
+      font-size: 18px;
+      cursor: pointer;
+    }
+    #name-input-screen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.85);
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+    #name-input-screen input {
+      padding: 10px;
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+    #name-input-screen button {
+      padding: 10px 20px;
+      font-size: 18px;
+      cursor: pointer;
+    }
+  </style>
 </head>
 <body>
 
-    <h1>Lóri Űrhajós Játéka</h1>
-    <p>Pontszám: <span id="score">0</span></p>
-    <p>Legmagasabb pontszám: <span id="highscore">0</span></p>
+  <div id="name-input-screen">
+    <h2>Írd be a neved:</h2>
+    <input type="text" id="playerNameInput" placeholder="Név">
+    <button onclick="startGame()">Játék indítása</button>
+  </div>
 
-    <canvas id="gameCanvas"></canvas>
+  <h1>Lóri Űrhajós Játéka</h1>
+  <p>Pontszám: <span id="score">0</span></p>
+  <p>Legmagasabb pontszám: <span id="highscore">0</span> (<span id="highscore-name">-</span>)</p>
 
-    <div class="joystick-container" id="joystick-container">
-        <div class="joystick" id="joystick"></div>
-    </div>
+  <canvas id="gameCanvas"></canvas>
 
-    <div id="game-over">
-        <p>Meghaltál! Mert egy csicska vagy.</p>
-        <button id="restart-button" onclick="restartGame()">Újraindítás</button>
-    </div>
+  <div class="joystick-container" id="joystick-container">
+    <div class="joystick" id="joystick"></div>
+  </div>
 
-    <script>
-        const canvas = document.getElementById("gameCanvas");
-        const ctx = canvas.getContext("2d");
+  <div id="game-over">
+    <p>Meghaltál! Mert egy csicska vagy.</p>
+    <button id="restart-button" onclick="restartGame()">Újraindítás</button>
+  </div>
 
-        canvas.width = window.innerWidth * 0.9;
-        canvas.height = window.innerHeight * 0.6;
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
 
-        let spaceship = { 
-            x: canvas.width / 2 - 20, 
-            y: canvas.height - 60,
-            width: 40, 
-            height: 40  
-        };
-        let obstacles = [];
-        let powerups = [];
-        let score = 0;
-        let highscore = localStorage.getItem("highscore") || 0;
-        let isGameOver = false;
-        let joystickActive = false;
-        let joystickStartX, joystickCenterX;
+    canvas.width = window.innerWidth * 0.9;
+    canvas.height = window.innerHeight * 0.6;
 
-        document.getElementById("score").innerText = score;
-        document.getElementById("highscore").innerText = highscore;
+    let spaceship = { x: canvas.width / 2 - 20, y: canvas.height - 60, width: 40, height: 40 };
+    let obstacles = [];
+    let powerups = [];
+    let score = 0;
+    let highscore = localStorage.getItem("highscore") || 0;
+    let highscoreName = localStorage.getItem("highscoreName") || "-";
+    let isGameOver = false;
+    let joystickActive = false;
+    let joystickStartX, joystickCenterX;
+    let playerName = "";
 
-        function drawSpaceship() {
-            ctx.font = "25px Arial";
-            ctx.fillText("🚀", spaceship.x, spaceship.y);
+    document.getElementById("score").innerText = score;
+    document.getElementById("highscore").innerText = highscore;
+    document.getElementById("highscore-name").innerText = highscoreName;
+
+    function startGame() {
+      const nameInput = document.getElementById("playerNameInput");
+      if (nameInput.value.trim() === "") return;
+      playerName = nameInput.value.trim();
+      document.getElementById("name-input-screen").style.display = "none";
+      updateGame();
+    }
+
+    function drawSpaceship() {
+      ctx.font = "25px Arial";
+      ctx.fillText("🚀", spaceship.x, spaceship.y);
+    }
+
+    function drawObstacles() {
+      ctx.font = "25px Arial";
+      obstacles.forEach(o => ctx.fillText("💥", o.x, o.y));
+    }
+
+    function drawPowerups() {
+      ctx.font = "25px Arial";
+      powerups.forEach(p => ctx.fillText("⭐", p.x, p.y));
+    }
+
+    function updateGame() {
+      if (isGameOver) return;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawSpaceship();
+      drawObstacles();
+      drawPowerups();
+
+      obstacles.forEach(o => o.y += 3);
+      powerups.forEach(p => p.y += 2);
+
+      obstacles.forEach(o => {
+        if (
+          spaceship.x < o.x + 25 &&
+          spaceship.x + spaceship.width > o.x &&
+          spaceship.y < o.y + 25 &&
+          spaceship.y + spaceship.height > o.y
+        ) {
+          gameOver();
         }
+      });
 
-        function drawObstacles() {
-            ctx.font = "25px Arial";
-            obstacles.forEach(obstacle => ctx.fillText("💥", obstacle.x, obstacle.y));
+      powerups = powerups.filter(p => {
+        if (
+          spaceship.x < p.x + 25 &&
+          spaceship.x + spaceship.width > p.x &&
+          spaceship.y < p.y + 25 &&
+          spaceship.y + spaceship.height > p.y
+        ) {
+          score += 1;
+          document.getElementById("score").innerText = score;
+          if (score > highscore) {
+            highscore = score;
+            highscoreName = playerName;
+            localStorage.setItem("highscore", highscore);
+            localStorage.setItem("highscoreName", highscoreName);
+            document.getElementById("highscore").innerText = highscore;
+            document.getElementById("highscore-name").innerText = highscoreName;
+          }
+          return false;
         }
+        return true;
+      });
 
-        function drawPowerups() {
-            ctx.font = "25px Arial";
-            powerups.forEach(powerup => ctx.fillText("⭐", powerup.x, powerup.y));
-        }
+      obstacles = obstacles.filter(o => o.y < canvas.height);
+      powerups = powerups.filter(p => p.y < canvas.height);
 
-        function updateGame() {
-            if (isGameOver) return;
+      requestAnimationFrame(updateGame);
+    }
 
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            drawSpaceship();
-            drawObstacles();
-            drawPowerups();
+    function gameOver() {
+      isGameOver = true;
+      document.getElementById("game-over").style.display = "block";
+    }
 
-            obstacles.forEach(obstacle => obstacle.y += 3);
-            powerups.forEach(powerup => powerup.y += 2);
+    function restartGame() {
+      document.getElementById("game-over").style.display = "none";
+      isGameOver = false;
+      score = 0;
+      document.getElementById("score").innerText = score;
+      spaceship.x = canvas.width / 2 - 20;
+      obstacles = [];
+      powerups = [];
+      updateGame();
+    }
 
-            // Ütközés vizsgálata akadályokkal
-            obstacles.forEach(obstacle => {
-                if (
-                    spaceship.x < obstacle.x + 25 &&
-                    spaceship.x + spaceship.width > obstacle.x &&
-                    spaceship.y < obstacle.y + 25 &&
-                    spaceship.y + spaceship.height > obstacle.y
-                ) {
-                    gameOver();
-                }
-            });
+    function spawnObstacle() {
+      obstacles.push({ x: Math.random() * (canvas.width - 30), y: 0 });
+    }
 
-            // Powerup felvétele
-            powerups = powerups.filter(powerup => {
-                if (
-                    spaceship.x < powerup.x + 25 &&
-                    spaceship.x + spaceship.width > powerup.x &&
-                    spaceship.y < powerup.y + 25 &&
-                    spaceship.y + spaceship.height > powerup.y
-                ) {
-                    score += 1;
-                    document.getElementById("score").innerText = score;
+    function spawnPowerup() {
+      powerups.push({ x: Math.random() * (canvas.width - 30), y: 0 });
+    }
 
-                    // Highscore frissítése
-                    if (score > highscore) {
-                        highscore = score;
-                        localStorage.setItem("highscore", highscore);
-                        document.getElementById("highscore").innerText = highscore;
-                    }
+    setInterval(spawnObstacle, 2000);
+    setInterval(spawnPowerup, 5000);
 
-                    return false;
-                }
-                return true;
-            });
+    function handleJoystickStart(event) {
+      joystickActive = true;
+      const touch = event.touches[0];
+      const rect = joystickContainer.getBoundingClientRect();
+      joystickCenterX = rect.left + rect.width / 2;
+      joystickStartX = touch.clientX;
+    }
 
-            // Tisztítás a képernyőn kívüli elemekhez
-            obstacles = obstacles.filter(obstacle => obstacle.y < canvas.height);
-            powerups = powerups.filter(powerup => powerup.y < canvas.height);
+    function handleJoystickMove(event) {
+      if (!joystickActive) return;
+      const touch = event.touches[0];
+      let deltaX = touch.clientX - joystickCenterX;
+      let maxDistance = 40;
+      let distance = Math.abs(deltaX);
+      if (distance > maxDistance) deltaX = (deltaX / distance) * maxDistance;
 
-            requestAnimationFrame(updateGame);
-        }
+      let sensitivity = 0.2;
+      spaceship.x += deltaX * sensitivity;
+      spaceship.x = Math.max(0, Math.min(canvas.width - spaceship.width, spaceship.x));
+      joystick.style.transform = `translate(${deltaX}px, 0px)`;
+    }
 
-        function gameOver() {
-            isGameOver = true;
-            document.getElementById("game-over").style.display = "block";
-        }
+    function handleJoystickEnd() {
+      joystickActive = false;
+      joystick.style.transform = `translate(0px, 0px)`;
+    }
 
-        function restartGame() {
-            document.getElementById("game-over").style.display = "none";
-            isGameOver = false;
-            
-            score = 0;
-            document.getElementById("score").innerText = score;
+    const joystick = document.getElementById("joystick");
+    const joystickContainer = document.getElementById("joystick-container");
 
-            spaceship.x = canvas.width / 2 - 20;
-            obstacles = [];
-            powerups = [];
-            updateGame();
-        }
-
-        function spawnObstacle() {
-            obstacles.push({ x: Math.random() * (canvas.width - 30), y: 0 });
-        }
-
-        function spawnPowerup() {
-            powerups.push({ x: Math.random() * (canvas.width - 30), y: 0 });
-        }
-
-        setInterval(spawnObstacle, 2000);
-        setInterval(spawnPowerup, 5000);
-        updateGame();
-
-        function handleJoystickStart(event) {
-            joystickActive = true;
-            const touch = event.touches[0];
-
-            const rect = joystickContainer.getBoundingClientRect();
-            joystickCenterX = rect.left + rect.width / 2;
-            joystickStartX = touch.clientX;
-        }
-
-        function handleJoystickMove(event) {
-            if (!joystickActive) return;
-            const touch = event.touches[0];
-            let deltaX = touch.clientX - joystickCenterX;
-
-            let maxDistance = 40;
-            let distance = Math.abs(deltaX);
-
-            if (distance > maxDistance) {
-                deltaX = (deltaX / distance) * maxDistance;
-            }
-
-            let sensitivity = 0.2;
-            spaceship.x += deltaX * sensitivity;
-
-            spaceship.x = Math.max(0, Math.min(canvas.width - spaceship.width, spaceship.x));
-
-            joystick.style.transform = `translate(${deltaX}px, 0px)`;
-        }
-
-        function handleJoystickEnd() {
-            joystickActive = false;
-            joystick.style.transform = `translate(0px, 0px)`;
-        }
-
-        const joystick = document.getElementById("joystick");
-        const joystickContainer = document.getElementById("joystick-container");
-
-        joystickContainer.addEventListener("touchstart", handleJoystickStart);
-        joystickContainer.addEventListener("touchmove", handleJoystickMove);
-        joystickContainer.addEventListener("touchend", handleJoystickEnd);
-    </script>
+    joystickContainer.addEventListener("touchstart", handleJoystickStart);
+    joystickContainer.addEventListener("touchmove", handleJoystickMove);
+    joystickContainer.addEventListener("touchend", handleJoystickEnd);
+  </script>
 
 </body>
 </html>
