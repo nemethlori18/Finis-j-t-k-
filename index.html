@@ -22,7 +22,7 @@
       top: 0;
       width: 50%;
       height: 100%;
-      background-color: rgba(255, 255, 0, 0.2);
+      background-color: rgba(255, 255, 0, 0);
       z-index: 5;
     }
     .touch-left { left: 0; }
@@ -153,18 +153,7 @@
     }
 
     if (controlMode === "tilt") {
-      if (typeof DeviceOrientationEvent !== "undefined" &&
-          typeof DeviceOrientationEvent.requestPermission === "function") {
-        DeviceOrientationEvent.requestPermission().then(permissionState => {
-          if (permissionState === "granted") {
-            window.addEventListener("deviceorientation", handleTilt);
-          } else {
-            alert("A dönthető irányításhoz engedély szükséges.");
-          }
-        }).catch(console.error);
-      } else {
-        window.addEventListener("deviceorientation", handleTilt);
-      }
+      window.addEventListener("deviceorientation", handleTilt);
     }
 
     updateLeaderboardDisplay();
@@ -196,16 +185,17 @@
     obstacles.forEach(o => o.y += 3);
     powerups.forEach(p => p.y += 2);
 
+    // pontosabb hitbox méret: 25x25 pixel
     obstacles.forEach(o => {
-      if (spaceship.x < o.x + 20 && spaceship.x + spaceship.width > o.x &&
-          spaceship.y < o.y + 20 && spaceship.y + spaceship.height > o.y) {
+      if (spaceship.x < o.x + 25 && spaceship.x + spaceship.width > o.x &&
+          spaceship.y < o.y + 25 && spaceship.y + spaceship.height > o.y) {
         gameOver();
       }
     });
 
     powerups = powerups.filter(p => {
-      if (spaceship.x < p.x + 20 && spaceship.x + spaceship.width > p.x &&
-          spaceship.y < p.y + 20 && spaceship.y + spaceship.height > p.y) {
+      if (spaceship.x < p.x + 25 && spaceship.x + spaceship.width > p.x &&
+          spaceship.y < p.y + 25 && spaceship.y + spaceship.height > p.y) {
         score += 1;
         document.getElementById("score").innerText = score;
         if (score > highscore) {
