@@ -17,26 +17,19 @@
       margin: auto;
       border: 2px solid black;
     }
-    .joystick-container {
+    .touch-zone {
       position: fixed;
-      bottom: 10px;
-      width: 100px;
-      height: 100px;
-      background-color: lightgray;
-      border-radius: 50%;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      transform: translateX(-50%);
-      z-index: 30;
+      top: 0;
+      width: 50%;
+      height: 100%;
+      background-color: rgba(255, 255, 0, 0.2); /* Átlátszó sárga */
+      z-index: 5;
     }
-    .joystick {
-      width: 40px;
-      height: 40px;
-      background-color: black;
-      border-radius: 50%;
-      position: absolute;
-      transition: 0.05s;
+    .touch-left {
+      left: 0;
+    }
+    .touch-right {
+      right: 0;
     }
     #game-over {
       display: none;
@@ -112,9 +105,8 @@
 
 <canvas id="gameCanvas"></canvas>
 
-<div class="joystick-container" id="joystick-container">
-  <div class="joystick" id="joystick"></div>
-</div>
+<div class="touch-zone touch-left" id="leftZone"></div>
+<div class="touch-zone touch-right" id="rightZone"></div>
 
 <div id="game-over">
   <p>Meghaltál! Mert egy csicska vagy.</p>
@@ -269,36 +261,24 @@
   setInterval(spawnObstacle, 800);
   setInterval(spawnPowerup, 1200);
 
-  const joystick = document.getElementById("joystick");
-  const joystickContainer = document.getElementById("joystick-container");
+  // Érintéses irányítás
+  document.getElementById("leftZone").addEventListener("touchstart", () => moveLeft = true);
+  document.getElementById("leftZone").addEventListener("touchend", () => moveLeft = false);
+  document.getElementById("rightZone").addEventListener("touchstart", () => moveRight = true);
+  document.getElementById("rightZone").addEventListener("touchend", () => moveRight = false);
 
-  let joystickCenterX = 0;
+  let moveLeft = false;
+  let moveRight = false;
 
-  window.addEventListener("touchstart", (event) => {
-    if (event.target.closest("#joystick-container")) return;
-    const touch = event.touches[0];
-    joystickContainer.style.left = `${touch.clientX}px`;
-    joystickContainer.style.bottom = "10px";
-    joystickContainer.style.display = "flex";
-    joystickCenterX = touch.clientX;
-  });
-
-  window.addEventListener("touchmove", (event) => {
-    const touchX = event.touches[0].clientX;
-    let deltaX = touchX - joystickCenterX;
-    const maxDistance = 40;
-    if (Math.abs(deltaX) > maxDistance) {
-      deltaX = (deltaX / Math.abs(deltaX)) * maxDistance;
+  function moveLoop() {
+    if (!isGameOver) {
+      if (moveLeft) spaceship.x -= 3;
+      if (moveRight) spaceship.x += 3;
+      spaceship.x = Math.max(0, Math.min(canvas.width - spaceship.width, spaceship.x));
     }
-    spaceship.x += deltaX * 0.1;
-    spaceship.x = Math.max(0, Math.min(canvas.width - spaceship.width, spaceship.x));
-    joystick.style.transform = `translate(${deltaX}px, 0px)`;
-  });
-
-  window.addEventListener("touchend", () => {
-    joystick.style.transform = `translate(0px, 0px)`;
-    joystickContainer.style.display = "none";
-  });
+    requestAnimationFrame(moveLoop);
+  }
+  moveLoop();
 </script>
 
 </body>
