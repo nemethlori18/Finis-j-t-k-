@@ -267,7 +267,9 @@
   }
 
   function spawnPowerup() {
-    powerups.push({ x: Math.random() * (canvas.width - 30), y: 0 });
+    for (let i = 0; i < 2; i++) {
+      powerups.push({ x: Math.random() * (canvas.width - 30), y: 0 });
+    }
   }
 
   setInterval(spawnObstacle, 2000);
