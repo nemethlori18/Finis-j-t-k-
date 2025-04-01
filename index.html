@@ -61,7 +61,7 @@
 </head>
 <body>
 
-    <h1>Űrhajós Játék</h1>
+    <h1>Lóri Űrhajós Játéka</h1>
     <p>Pontszám: <span id="score">0</span></p>
     <p>Legmagasabb pontszám: <span id="highscore">0</span></p>
 
@@ -72,7 +72,7 @@
     </div>
 
     <div id="game-over">
-        <p>Meghaltál!</p>
+        <p>Meghaltál! Mert egy csicska vagy.</p>
         <button id="restart-button" onclick="restartGame()">Újraindítás</button>
     </div>
 
@@ -219,7 +219,7 @@
                 deltaX = (deltaX / distance) * maxDistance;
             }
 
-            let sensitivity = 0.3;
+            let sensitivity = 0.2;
             spaceship.x += deltaX * sensitivity;
 
             spaceship.x = Math.max(0, Math.min(canvas.width - spaceship.width, spaceship.x));
