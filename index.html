@@ -18,7 +18,7 @@
       border: 2px solid black;
     }
     .joystick-container {
-      position: absolute;
+      position: fixed;
       bottom: 10px;
       left: 50%;
       transform: translateX(-50%);
@@ -26,10 +26,9 @@
       height: 100px;
       background-color: lightgray;
       border-radius: 50%;
-      display: flex;
+      display: none;
       align-items: center;
       justify-content: center;
-      position: fixed;
     }
     .joystick {
       width: 40px;
@@ -132,8 +131,8 @@
 <script>
   const canvas = document.getElementById("gameCanvas");
   const ctx = canvas.getContext("2d");
-  canvas.width = window.innerWidth * 0.85; // kisebb szélesség
-  canvas.height = window.innerHeight * 0.55; // kisebb magasság
+  canvas.width = window.innerWidth * 0.85;
+  canvas.height = window.innerHeight * 0.55;
 
   let spaceship = { x: canvas.width / 2 - 20, y: canvas.height - 60, width: 40, height: 40 };
   let obstacles = [], powerups = [];
@@ -142,8 +141,6 @@
   let highscoreName = localStorage.getItem("highscoreName") || "-";
   let leaderboard = JSON.parse(localStorage.getItem("leaderboard") || "[]");
   let isGameOver = false;
-  let joystickActive = false;
-  let joystickStartX, joystickCenterX;
   let playerName = "";
 
   document.getElementById("score").innerText = score;
@@ -218,13 +215,8 @@
   function gameOver() {
     isGameOver = true;
     document.getElementById("game-over").style.display = "block";
-    // Töröljük a meglévő bejegyzést ugyanazzal a névvel
     leaderboard = leaderboard.filter(entry => entry.name !== playerName);
-
-    // Hozzáadjuk az újat
     leaderboard.push({ name: playerName, score });
-
-    // Rendezés és limitálás
     leaderboard.sort((a, b) => b.score - a.score);
     leaderboard = leaderboard.slice(0, 5);
     localStorage.setItem("leaderboard", JSON.stringify(leaderboard));
@@ -276,40 +268,34 @@
     powerups.push({ x: Math.random() * (canvas.width - 30), y: 0 });
   }
 
-  setInterval(spawnObstacle, 2000);
-  setInterval(spawnPowerup, 2500);
+  setInterval(spawnObstacle, 800);
+  setInterval(spawnPowerup, 1500);
 
-  function handleJoystickStart(event) {
-    joystickActive = true;
-    const touch = event.touches[0];
-    const rect = joystickContainer.getBoundingClientRect();
-    joystickCenterX = rect.left + rect.width / 2;
-    joystickStartX = touch.clientX;
-  }
+  const joystick = document.getElementById("joystick");
+  const joystickContainer = document.getElementById("joystick-container");
 
-  function handleJoystickMove(event) {
-    if (!joystickActive) return;
-    const touch = event.touches[0];
-    let deltaX = touch.clientX - joystickCenterX;
-    let maxDistance = 40;
+  joystickContainer.addEventListener("touchstart", (event) => {
+    joystickContainer.style.left = `${event.touches[0].clientX}px`;
+    joystickCenterX = event.touches[0].clientX;
+    joystickContainer.style.display = "flex";
+  });
+
+  joystickContainer.addEventListener("touchmove", (event) => {
+    const touchX = event.touches[0].clientX;
+    let deltaX = touchX - joystickCenterX;
+    const maxDistance = 40;
     if (Math.abs(deltaX) > maxDistance) {
       deltaX = (deltaX / Math.abs(deltaX)) * maxDistance;
     }
     spaceship.x += deltaX * 0.1;
     spaceship.x = Math.max(0, Math.min(canvas.width - spaceship.width, spaceship.x));
     joystick.style.transform = `translate(${deltaX}px, 0px)`;
-  }
+  });
 
-  function handleJoystickEnd() {
-    joystickActive = false;
+  joystickContainer.addEventListener("touchend", () => {
     joystick.style.transform = `translate(0px, 0px)`;
-  }
-
-  const joystick = document.getElementById("joystick");
-  const joystickContainer = document.getElementById("joystick-container");
-  joystickContainer.addEventListener("touchstart", handleJoystickStart);
-  joystickContainer.addEventListener("touchmove", handleJoystickMove);
-  joystickContainer.addEventListener("touchend", handleJoystickEnd);
+    joystickContainer.style.display = "none";
+  });
 </script>
 
 </body>
