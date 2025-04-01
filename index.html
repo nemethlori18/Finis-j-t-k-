@@ -22,15 +22,11 @@
       top: 0;
       width: 50%;
       height: 100%;
-      background-color: rgba(255, 255, 0, 0.2); /* Átlátszó sárga */
+      background-color: rgba(255, 255, 0, 0.2);
       z-index: 5;
     }
-    .touch-left {
-      left: 0;
-    }
-    .touch-right {
-      right: 0;
-    }
+    .touch-left { left: 0; }
+    .touch-right { right: 0; }
     #game-over {
       display: none;
       position: absolute;
@@ -64,7 +60,7 @@
       justify-content: center;
       z-index: 10;
     }
-    #name-input-screen input {
+    #name-input-screen input, #name-input-screen select {
       padding: 10px;
       font-size: 18px;
       margin-bottom: 10px;
@@ -96,6 +92,10 @@
 <div id="name-input-screen">
   <h2>Írd be a neved:</h2>
   <input type="text" id="playerNameInput" placeholder="Név">
+  <select id="controlMode">
+    <option value="touch">Érintéses irányítás</option>
+    <option value="tilt">Dönthető irányítás</option>
+  </select>
   <button onclick="startGame()">Játék indítása</button>
 </div>
 
@@ -105,8 +105,8 @@
 
 <canvas id="gameCanvas"></canvas>
 
-<div class="touch-zone touch-left" id="leftZone"></div>
-<div class="touch-zone touch-right" id="rightZone"></div>
+<div class="touch-zone touch-left" id="leftZone" style="display: none;"></div>
+<div class="touch-zone touch-right" id="rightZone" style="display: none;"></div>
 
 <div id="game-over">
   <p>Meghaltál! Mert egy csicska vagy.</p>
@@ -132,6 +132,8 @@
   let leaderboard = JSON.parse(localStorage.getItem("leaderboard") || "[]");
   let isGameOver = false;
   let playerName = "";
+  let controlMode = "touch";
+  let moveLeft = false, moveRight = false;
 
   document.getElementById("score").innerText = score;
   document.getElementById("highscore").innerText = highscore;
@@ -139,9 +141,21 @@
 
   function startGame() {
     const nameInput = document.getElementById("playerNameInput");
+    const controlSelect = document.getElementById("controlMode");
     if (nameInput.value.trim() === "") return;
     playerName = nameInput.value.trim();
+    controlMode = controlSelect.value;
     document.getElementById("name-input-screen").style.display = "none";
+
+    if (controlMode === "touch") {
+      document.getElementById("leftZone").style.display = "block";
+      document.getElementById("rightZone").style.display = "block";
+    }
+
+    if (controlMode === "tilt") {
+      window.addEventListener("deviceorientation", handleTilt);
+    }
+
     updateLeaderboardDisplay();
     updateGame();
   }
@@ -202,6 +216,28 @@
     requestAnimationFrame(updateGame);
   }
 
+  function handleTilt(event) {
+    const gamma = event.gamma; // -90 és 90 között
+    if (gamma > 5) spaceship.x += 3;
+    if (gamma < -5) spaceship.x -= 3;
+    spaceship.x = Math.max(0, Math.min(canvas.width - spaceship.width, spaceship.x));
+  }
+
+  document.getElementById("leftZone").addEventListener("touchstart", () => moveLeft = true);
+  document.getElementById("leftZone").addEventListener("touchend", () => moveLeft = false);
+  document.getElementById("rightZone").addEventListener("touchstart", () => moveRight = true);
+  document.getElementById("rightZone").addEventListener("touchend", () => moveRight = false);
+
+  function moveLoop() {
+    if (!isGameOver && controlMode === "touch") {
+      if (moveLeft) spaceship.x -= 3;
+      if (moveRight) spaceship.x += 3;
+      spaceship.x = Math.max(0, Math.min(canvas.width - spaceship.width, spaceship.x));
+    }
+    requestAnimationFrame(moveLoop);
+  }
+  moveLoop();
+
   function gameOver() {
     isGameOver = true;
     document.getElementById("game-over").style.display = "block";
@@ -260,25 +296,6 @@
 
   setInterval(spawnObstacle, 800);
   setInterval(spawnPowerup, 1200);
-
-  // Érintéses irányítás
-  document.getElementById("leftZone").addEventListener("touchstart", () => moveLeft = true);
-  document.getElementById("leftZone").addEventListener("touchend", () => moveLeft = false);
-  document.getElementById("rightZone").addEventListener("touchstart", () => moveRight = true);
-  document.getElementById("rightZone").addEventListener("touchend", () => moveRight = false);
-
-  let moveLeft = false;
-  let moveRight = false;
-
-  function moveLoop() {
-    if (!isGameOver) {
-      if (moveLeft) spaceship.x -= 3;
-      if (moveRight) spaceship.x += 3;
-      spaceship.x = Math.max(0, Math.min(canvas.width - spaceship.width, spaceship.x));
-    }
-    requestAnimationFrame(moveLoop);
-  }
-  moveLoop();
 </script>
 
 </body>
