@@ -129,9 +129,9 @@
             // Ütközés vizsgálata akadályokkal
             obstacles.forEach(obstacle => {
                 if (
-                    spaceship.x < obstacle.x + 30 &&
+                    spaceship.x < obstacle.x + 25 &&
                     spaceship.x + spaceship.width > obstacle.x &&
-                    spaceship.y < obstacle.y + 30 &&
+                    spaceship.y < obstacle.y + 25 &&
                     spaceship.y + spaceship.height > obstacle.y
                 ) {
                     gameOver();
@@ -141,9 +141,9 @@
             // Powerup felvétele
             powerups = powerups.filter(powerup => {
                 if (
-                    spaceship.x < powerup.x + 30 &&
+                    spaceship.x < powerup.x + 25 &&
                     spaceship.x + spaceship.width > powerup.x &&
-                    spaceship.y < powerup.y + 30 &&
+                    spaceship.y < powerup.y + 25 &&
                     spaceship.y + spaceship.height > powerup.y
                 ) {
                     score += 1;
