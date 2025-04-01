@@ -132,8 +132,8 @@
 <script>
   const canvas = document.getElementById("gameCanvas");
   const ctx = canvas.getContext("2d");
-  canvas.width = window.innerWidth * 0.9;
-  canvas.height = window.innerHeight * 0.6;
+  canvas.width = window.innerWidth * 0.85; // kisebb szélesség
+  canvas.height = window.innerHeight * 0.55; // kisebb magasság
 
   let spaceship = { x: canvas.width / 2 - 20, y: canvas.height - 60, width: 40, height: 40 };
   let obstacles = [], powerups = [];
@@ -267,9 +267,7 @@
   }
 
   function spawnPowerup() {
-    for (let i = 0; i < 2; i++) {
-      powerups.push({ x: Math.random() * (canvas.width - 30), y: 0 });
-    }
+    powerups.push({ x: Math.random() * (canvas.width - 30), y: 0 });
   }
 
   setInterval(spawnObstacle, 2000);
