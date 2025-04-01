@@ -82,15 +82,13 @@
       cursor: pointer;
     }
     #leaderboard {
-      margin-top: 20px;
-      color: white;
-      background: rgba(0, 0, 0, 0.6);
+      margin-top: 15px;
+      background: rgba(255, 255, 255, 0.1);
       padding: 10px;
-      display: inline-block;
       border-radius: 10px;
     }
     #leaderboard h3 {
-      margin: 5px;
+      margin: 5px 0;
     }
     #leaderboard ul {
       list-style: none;
@@ -111,11 +109,6 @@
   <p>Pontszám: <span id="score">0</span></p>
   <p>Legmagasabb pontszám: <span id="highscore">0</span> (<span id="highscore-name">-</span>)</p>
 
-  <div id="leaderboard">
-    <h3>Eredménylista</h3>
-    <ul id="leaderboard-list"></ul>
-  </div>
-
   <canvas id="gameCanvas"></canvas>
 
   <div class="joystick-container" id="joystick-container">
@@ -124,6 +117,10 @@
 
   <div id="game-over">
     <p>Meghaltál! Mert egy csicska vagy.</p>
+    <div id="leaderboard">
+      <h3>Eredménylista</h3>
+      <ul id="leaderboard-list"></ul>
+    </div>
     <button id="restart-button" onclick="restartGame()">Újraindítás</button>
   </div>
 
@@ -155,7 +152,6 @@
       if (nameInput.value.trim() === "") return;
       playerName = nameInput.value.trim();
       document.getElementById("name-input-screen").style.display = "none";
-      updateLeaderboardDisplay();
       updateGame();
     }
 
@@ -227,7 +223,13 @@
       isGameOver = true;
       document.getElementById("game-over").style.display = "block";
 
-      leaderboard.push({ name: playerName, score });
+      // Frissítsd a toplistát úgy, hogy egy név csak egyszer szerepeljen a legjobb eredményével
+      const existing = leaderboard.find(entry => entry.name === playerName);
+      if (!existing || score > existing.score) {
+        leaderboard = leaderboard.filter(entry => entry.name !== playerName);
+        leaderboard.push({ name: playerName, score });
+      }
+
       leaderboard.sort((a, b) => b.score - a.score);
       leaderboard = leaderboard.slice(0, 5);
       localStorage.setItem("leaderboard", JSON.stringify(leaderboard));
