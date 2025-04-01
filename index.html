@@ -218,7 +218,6 @@
   function gameOver() {
     isGameOver = true;
     document.getElementById("game-over").style.display = "block";
-
     leaderboard.push({ name: playerName, score });
     leaderboard.sort((a, b) => b.score - a.score);
     leaderboard = leaderboard.slice(0, 5);
@@ -237,12 +236,16 @@
   }
 
   function resetLeaderboard() {
-    const pass = prompt("Írd be a jelszót az eredménylista törléséhez:");
+    const pass = prompt("Írd be a jelszót az eredménylista és a highscore törléséhez:");
     if (pass === "reset") {
       leaderboard = [];
       localStorage.removeItem("leaderboard");
+      localStorage.removeItem("highscore");
+      localStorage.removeItem("highscoreName");
+      document.getElementById("highscore").innerText = "0";
+      document.getElementById("highscore-name").innerText = "-";
       updateLeaderboardDisplay();
-      alert("Eredménylista törölve.");
+      alert("Eredménylista és highscore törölve.");
     } else {
       alert("Hibás jelszó!");
     }
@@ -286,7 +289,7 @@
     if (Math.abs(deltaX) > maxDistance) {
       deltaX = (deltaX / Math.abs(deltaX)) * maxDistance;
     }
-    spaceship.x += deltaX * 0.2;
+    spaceship.x += deltaX * 0.1;
     spaceship.x = Math.max(0, Math.min(canvas.width - spaceship.width, spaceship.x));
     joystick.style.transform = `translate(${deltaX}px, 0px)`;
   }
