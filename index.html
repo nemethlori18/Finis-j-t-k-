@@ -81,6 +81,22 @@
       font-size: 18px;
       cursor: pointer;
     }
+    #leaderboard {
+      margin-top: 20px;
+      color: white;
+      background: rgba(0, 0, 0, 0.6);
+      padding: 10px;
+      display: inline-block;
+      border-radius: 10px;
+    }
+    #leaderboard h3 {
+      margin: 5px;
+    }
+    #leaderboard ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
   </style>
 </head>
 <body>
@@ -94,6 +110,11 @@
   <h1>Lóri Űrhajós Játéka</h1>
   <p>Pontszám: <span id="score">0</span></p>
   <p>Legmagasabb pontszám: <span id="highscore">0</span> (<span id="highscore-name">-</span>)</p>
+
+  <div id="leaderboard">
+    <h3>Eredménylista</h3>
+    <ul id="leaderboard-list"></ul>
+  </div>
 
   <canvas id="gameCanvas"></canvas>
 
@@ -119,6 +140,7 @@
     let score = 0;
     let highscore = localStorage.getItem("highscore") || 0;
     let highscoreName = localStorage.getItem("highscoreName") || "-";
+    let leaderboard = JSON.parse(localStorage.getItem("leaderboard") || "[]");
     let isGameOver = false;
     let joystickActive = false;
     let joystickStartX, joystickCenterX;
@@ -133,6 +155,7 @@
       if (nameInput.value.trim() === "") return;
       playerName = nameInput.value.trim();
       document.getElementById("name-input-screen").style.display = "none";
+      updateLeaderboardDisplay();
       updateGame();
     }
 
@@ -153,7 +176,6 @@
 
     function updateGame() {
       if (isGameOver) return;
-
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       drawSpaceship();
       drawObstacles();
@@ -204,6 +226,22 @@
     function gameOver() {
       isGameOver = true;
       document.getElementById("game-over").style.display = "block";
+
+      leaderboard.push({ name: playerName, score });
+      leaderboard.sort((a, b) => b.score - a.score);
+      leaderboard = leaderboard.slice(0, 5);
+      localStorage.setItem("leaderboard", JSON.stringify(leaderboard));
+      updateLeaderboardDisplay();
+    }
+
+    function updateLeaderboardDisplay() {
+      const list = document.getElementById("leaderboard-list");
+      list.innerHTML = "";
+      leaderboard.forEach(entry => {
+        const li = document.createElement("li");
+        li.innerText = `${entry.name}: ${entry.score} pont`;
+        list.appendChild(li);
+      });
     }
 
     function restartGame() {
