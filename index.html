@@ -4,6 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Űrhajós Játék – Multiplayer</title>
+
+  <!-- Firebase compat SDK-k (import nélkül, mobilbarát) -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+
   <style>
     body {
       text-align: center;
@@ -97,10 +102,7 @@
       z-index: 30;
     }
   </style>
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-    import { getFirestore, doc, setDoc, getDoc, onSnapshot, updateDoc, collection } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
-
+    <script>
     const firebaseConfig = {
       apiKey: "AIzaSyCHztPkSDFGrEhgNWCGqGn-7TuYooOM_Rk",
       authDomain: "urhajozas-e87d7.firebaseapp.com",
@@ -111,8 +113,8 @@
       measurementId: "G-PEH6JDDGXH"
     };
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
 
     let playerName = "";
     let roomId = "";
@@ -121,23 +123,23 @@
       playerName = name;
       roomId = room;
 
-      const playerRef = doc(db, "rooms", roomId, "players", playerName);
-      const playerSnap = await getDoc(playerRef);
-      if (!playerSnap.exists()) {
-        await setDoc(playerRef, { name: playerName, score: 0 });
+      const playerRef = db.collection("rooms").doc(roomId).collection("players").doc(playerName);
+      const playerSnap = await playerRef.get();
+      if (!playerSnap.exists) {
+        await playerRef.set({ name: playerName, score: 0 });
       }
       listenForScores();
     }
 
     async function updateScore(score) {
       if (!playerName || !roomId) return;
-      const playerRef = doc(db, "rooms", roomId, "players", playerName);
-      await updateDoc(playerRef, { score: score });
+      const playerRef = db.collection("rooms").doc(roomId).collection("players").doc(playerName);
+      await playerRef.update({ score: score });
     }
 
     function listenForScores() {
-      const listRef = collection(db, "rooms", roomId, "players");
-      onSnapshot(listRef, (snapshot) => {
+      const listRef = db.collection("rooms").doc(roomId).collection("players");
+      listRef.onSnapshot(snapshot => {
         const list = document.getElementById("leaderboard-list");
         if (list) {
           list.innerHTML = "";
@@ -157,7 +159,7 @@
 <div id="name-input-screen">
   <h2>Írd be a neved és a szoba azonosítót:</h2>
   <input type="text" id="playerNameInput" placeholder="Név">
-  <input type="text" id="roomInput" placeholder="Szoba kód (pl. ABC123)">
+  <input type="text" id="roomInput" placeholder="Szoba kód (ide írd, hogy 123)">
   <select id="controlMode">
     <option value="touch">Érintéses irányítás</option>
     <option value="tilt">Dönthető irányítás</option>
@@ -170,7 +172,6 @@
 <p>Legmagasabb pontszám: <span id="highscore">0</span> (<span id="highscore-name">-</span>)</p>
 
 <canvas id="gameCanvas"></canvas>
-
 <div class="touch-zone touch-left" id="leftZone" style="display: none;"></div>
 <div class="touch-zone touch-right" id="rightZone" style="display: none;"></div>
 
@@ -183,7 +184,7 @@
     <ul id="leaderboard-list"></ul>
   </div>
   <button id="restart-button" onclick="restartGame()">Újraindítás</button><br/>
-  <button id="reset-leaderboard-button" onclick="resetLeaderboard()">Eredménylista törlése</button>
+  <button id="reset-leaderboard-button">Eredménylista törlése</button>
 </div>
 <script>
 const canvas = document.getElementById("gameCanvas");
@@ -198,6 +199,7 @@ let highscore = localStorage.getItem("highscore") || 0;
 let highscoreName = localStorage.getItem("highscoreName") || "-";
 let leaderboard = JSON.parse(localStorage.getItem("leaderboard") || "[]");
 let isGameOver = false;
+let controlMode = "touch";
 let moveLeft = false, moveRight = false;
 
 document.getElementById("score").innerText = score;
@@ -208,12 +210,14 @@ function startGame() {
   const nameInput = document.getElementById("playerNameInput");
   const roomInput = document.getElementById("roomInput");
   const controlSelect = document.getElementById("controlMode");
+
   if (nameInput.value.trim() === "" || roomInput.value.trim() === "") return;
 
   playerName = nameInput.value.trim();
   roomId = roomInput.value.trim();
   controlMode = controlSelect.value;
-  firebaseLogin(playerName, roomId); // <-- Firebase login itt történik
+
+  firebaseLogin(playerName, roomId);
   document.getElementById("name-input-screen").style.display = "none";
 
   if (controlMode === "touch") {
@@ -238,6 +242,22 @@ function startGame() {
   updateLeaderboardDisplay();
   updateGame();
 }
+
+document.getElementById("leftZone").addEventListener("touchstart", () => moveLeft = true);
+document.getElementById("leftZone").addEventListener("touchend", () => moveLeft = false);
+document.getElementById("rightZone").addEventListener("touchstart", () => moveRight = true);
+document.getElementById("rightZone").addEventListener("touchend", () => moveRight = false);
+
+function moveLoop() {
+  if (!isGameOver && controlMode === "touch") {
+    let step = activePowerups["⚡"] ? 6 : 3;
+    if (moveLeft) spaceship.x -= step;
+    if (moveRight) spaceship.x += step;
+    spaceship.x = Math.max(0, Math.min(canvas.width - spaceship.width, spaceship.x));
+  }
+  requestAnimationFrame(moveLoop);
+}
+moveLoop();
 function drawSpaceship() {
   ctx.font = "25px Arial";
   ctx.fillText("🚀", spaceship.x, spaceship.y);
@@ -283,7 +303,7 @@ function updateGame() {
       if (["🛡️", "⚡", "🐢"].includes(p.emoji)) activatePowerup(p.emoji, 5000);
 
       document.getElementById("score").innerText = score;
-      updateScore(score); // <-- Firebase pont frissítése
+      updateScore(score); // Firebase frissítés
 
       if (score > highscore) {
         highscore = score;
@@ -323,6 +343,7 @@ function updatePowerupDisplay() {
     container.innerHTML += `${emoji} ${activePowerups[emoji]}s<br>`;
   }
 }
+
 function handleTilt(event) {
   const gamma = event.gamma;
   let step = activePowerups["⚡"] ? 6 : 3;
@@ -330,23 +351,6 @@ function handleTilt(event) {
   if (gamma < -5) spaceship.x -= step;
   spaceship.x = Math.max(0, Math.min(canvas.width - spaceship.width, spaceship.x));
 }
-
-document.getElementById("leftZone").addEventListener("touchstart", () => moveLeft = true);
-document.getElementById("leftZone").addEventListener("touchend", () => moveLeft = false);
-document.getElementById("rightZone").addEventListener("touchstart", () => moveRight = true);
-document.getElementById("rightZone").addEventListener("touchend", () => moveRight = false);
-
-function moveLoop() {
-  if (!isGameOver && controlMode === "touch") {
-    let step = activePowerups["⚡"] ? 6 : 3;
-    if (moveLeft) spaceship.x -= step;
-    if (moveRight) spaceship.x += step;
-    spaceship.x = Math.max(0, Math.min(canvas.width - spaceship.width, spaceship.x));
-  }
-  requestAnimationFrame(moveLoop);
-}
-moveLoop();
-
 function gameOver() {
   isGameOver = true;
   document.getElementById("game-over").style.display = "block";
@@ -376,7 +380,7 @@ function updateLeaderboardDisplay() {
   });
 }
 
-function resetLeaderboard() {
+document.getElementById("reset-leaderboard-button").addEventListener("click", () => {
   const pass = prompt("Írd be a jelszót az eredménylista és a highscore törléséhez:");
   if (pass === "reset") {
     leaderboard = [];
@@ -390,7 +394,7 @@ function resetLeaderboard() {
   } else {
     alert("Hibás jelszó!");
   }
-}
+});
 
 function restartGame() {
   document.getElementById("game-over").style.display = "none";
