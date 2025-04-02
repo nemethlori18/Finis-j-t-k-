@@ -370,14 +370,19 @@ function gameOver() {
   updateLeaderboardDisplay();
 }
 
-function updateLeaderboardDisplay() {
-  const list = document.getElementById("leaderboard-list");
-  list.innerHTML = "";
-  leaderboard.forEach(entry => {
-    const li = document.createElement("li");
-    li.innerText = `${entry.name}: ${entry.score} pont`;
-    list.appendChild(li);
-  });
+function listenForScores() {
+  db.collection("rooms").doc(roomId).collection("players")
+    .orderBy("score", "desc")
+    .onSnapshot(snapshot => {
+      const list = document.getElementById("leaderboard-list");
+      list.innerHTML = "";
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const li = document.createElement("li");
+        li.textContent = `${data.name}: ${data.score} pont`;
+        list.appendChild(li);
+      });
+    });
 }
 
 document.getElementById("reset-leaderboard-button").addEventListener("click", () => {
